@@ -121,7 +121,49 @@ class MKIDBrowserWidget(widgets.BrowserWidget):
         self.setLayout(vbox)
 
 
-class SweepPlotWidget(widgets.PlotWidget):
+class MKIDPlotWidget(widgets.PlotWidget):
+    """Base class for all plot widgets. Only determines the user interface and layout."""
+    def _setup_ui(self):
+        self.columns_x = QtGui.QComboBox(self)
+        self.columns_y = QtGui.QComboBox(self)
+        self.columns_x.hide()
+        self.columns_y.hide()
+        for column in self.columns:
+            self.columns_x.addItem(column)
+            self.columns_y.addItem(column)
+        self.columns_x.activated.connect(self.update_x_column)
+        self.columns_y.activated.connect(self.update_y_column)
+
+        if self.x_label is None:
+            x_label = self.x_axes if isinstance(self.x_axes, str) else self.x_axes[0]
+        else:
+            x_label = self.x_label
+        if self.y_label is None:
+            y_label = self.y_axes if isinstance(self.y_axes, str) else self.y_axes[0]
+        else:
+            y_label = self.y_label
+        self.plot_frame = widgets.PlotFrame(x_label, y_label, self.refresh_time,
+                                            self.check_status)
+        self.updated = self.plot_frame.updated
+        self.plot = self.plot_frame.plot
+        self.columns_x.setCurrentIndex(0)
+        self.columns_y.setCurrentIndex(1)
+        if self.legend_text is not None:
+            style_cycle = self.style_cycle()
+            self.legend = self.plot_frame.plot_widget.addLegend(offset=(1, 1))
+            for text in self.legend_text:
+                legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
+                legend_item_sample = MKIDItemSample(legend_item)
+                self.legend.addItem(legend_item_sample, text)
+
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(0)
+        vbox.addWidget(self.plot_frame)
+        self.setLayout(vbox)
+
+
+class SweepPlotWidget(MKIDPlotWidget):
     """Plot widget for an IQ sweep"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
                  y_label=None, legend_text=None, **kwargs):
@@ -152,45 +194,6 @@ class SweepPlotWidget(widgets.PlotWidget):
         self.plot.setAspectLocked(True)
         self.plot.enableAutoRange(True)
 
-    def _setup_ui(self):
-        self.columns_x = QtGui.QComboBox(self)
-        self.columns_y = QtGui.QComboBox(self)
-        self.columns_x.hide()
-        self.columns_y.hide()
-        for column in self.columns:
-            self.columns_x.addItem(column)
-            self.columns_y.addItem(column)
-        self.columns_x.activated.connect(self.update_x_column)
-        self.columns_y.activated.connect(self.update_y_column)
-
-        if self.x_label is None:
-            x_label = self.x_axes if isinstance(self.x_axes, str) else self.x_axes[0]
-        else:
-            x_label = self.x_label
-        if self.y_label is None:
-            y_label = self.y_axes if isinstance(self.y_axes, str) else self.y_axes[0]
-        else:
-            y_label = self.y_label
-        self.plot_frame = widgets.PlotFrame(x_label, y_label, self.refresh_time,
-                                            self.check_status)
-        self.updated = self.plot_frame.updated
-        self.plot = self.plot_frame.plot
-        self.columns_x.setCurrentIndex(0)
-        self.columns_y.setCurrentIndex(1)
-        if self.legend_text is not None:
-            style_cycle = self.style_cycle()
-            self.legend = self.plot_frame.plot_widget.addLegend(offset=(1, 1))
-            for text in self.legend_text:
-                legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
-                legend_item_sample = MKIDItemSample(legend_item)
-                self.legend.addItem(legend_item_sample, text)
-
-    def _layout(self):
-        vbox = QtGui.QVBoxLayout(self)
-        vbox.setSpacing(0)
-        vbox.addWidget(self.plot_frame)
-        self.setLayout(vbox)
-
     def new_curve(self, results, **kwargs):
         curve = []
         for index, _ in enumerate(self.x_axes):
@@ -212,7 +215,7 @@ class SweepPlotWidget(widgets.PlotWidget):
         return curve
 
 
-class NoisePlotWidget(widgets.PlotWidget):
+class NoisePlotWidget(MKIDPlotWidget):
     """Plot widget for noise"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
                  y_label=None, legend_text=None, **kwargs):
@@ -229,53 +232,14 @@ class NoisePlotWidget(widgets.PlotWidget):
                                    pg.mkPen(color='w', width=4,
                                             style=QtCore.Qt.DashDotDotLine)],
                            "shadowPen": [pg.mkPen(color='k', width=4),
-                                   pg.mkPen(color='k', width=4),
-                                   pg.mkPen(color='k', width=4),
-                                   pg.mkPen(color='k', width=4)]}
+                                         pg.mkPen(color='k', width=4),
+                                         pg.mkPen(color='k', width=4),
+                                         pg.mkPen(color='k', width=4)]}
         n = int(np.ceil(len(self.x_axes) / len(self.line_style["pen"])))
         self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
         self.plot.setLogMode(True, True)
-
-    def _setup_ui(self):
-        self.columns_x = QtGui.QComboBox(self)
-        self.columns_y = QtGui.QComboBox(self)
-        self.columns_x.hide()
-        self.columns_y.hide()
-        for column in self.columns:
-            self.columns_x.addItem(column)
-            self.columns_y.addItem(column)
-        self.columns_x.activated.connect(self.update_x_column)
-        self.columns_y.activated.connect(self.update_y_column)
-
-        if self.x_label is None:
-            x_label = self.x_axes if isinstance(self.x_axes, str) else self.x_axes[0]
-        else:
-            x_label = self.x_label
-        if self.y_label is None:
-            y_label = self.y_axes if isinstance(self.y_axes, str) else self.y_axes[0]
-        else:
-            y_label = self.y_label
-        self.plot_frame = widgets.PlotFrame(x_label, y_label, self.refresh_time,
-                                            self.check_status)
-        self.updated = self.plot_frame.updated
-        self.plot = self.plot_frame.plot
-        self.columns_x.setCurrentIndex(0)
-        self.columns_y.setCurrentIndex(1)
-        if self.legend_text is not None:
-            style_cycle = self.style_cycle()
-            self.legend = self.plot_frame.plot_widget.addLegend(offset=(1, 1))
-            for text in self.legend_text:
-                legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
-                legend_item_sample = MKIDItemSample(legend_item)
-                self.legend.addItem(legend_item_sample, text)
-
-    def _layout(self):
-        vbox = QtGui.QVBoxLayout(self)
-        vbox.setSpacing(0)
-        vbox.addWidget(self.plot_frame)
-        self.setLayout(vbox)
 
     def new_curve(self, results, **kwargs):
         curve = []
@@ -295,54 +259,6 @@ class NoisePlotWidget(widgets.PlotWidget):
                                            y=self.y_axes[index], **cycled_args))
 
         return curve
-
-    # def __init__(self, *args, **kwargs):
-    #     self._point_size = 10
-    #     self.line_style = {"pen": pg.mkPen(color='k', style=QtCore.Qt.DashLine, width=4),
-    #                        "shadowPen": pg.mkPen(color='g', style=QtCore.Qt.SolidLine,
-    #                                              width=4),
-    #                        "symbol": 'o', "symbolPen": pg.mkPen(color='k', width=0),
-    #                        "symbolBrush": pg.mkBrush(color='k'),
-    #                        "symbolSize": self._point_size, "pxMode": True,
-    #                        "fillLevel": 0.1, "fillBrush": pg.mkBrush(color='b')}
-    #     super().__init__(*args, **kwargs)
-    #
-    # def _setup_ui(self):
-    #     self.columns_x = QtGui.QComboBox(self)
-    #     self.columns_y = QtGui.QComboBox(self)
-    #     # self.columns_x.hide()
-    #     # self.columns_y.hide()
-    #     for column in self.columns:
-    #         self.columns_x.addItem(column)
-    #         self.columns_y.addItem(column)
-    #     self.columns_x.activated.connect(self.update_x_column)
-    #     self.columns_y.activated.connect(self.update_y_column)
-    #
-    #     self.plot_frame = widgets.PlotFrame(self.columns[0], self.columns[1],
-    #                                         self.refresh_time, self.check_status)
-    #     self.updated = self.plot_frame.updated
-    #     self.plot = self.plot_frame.plot
-    #     self.columns_x.setCurrentIndex(0)
-    #     self.columns_y.setCurrentIndex(1)
-    #
-    # def _layout(self):
-    #     vbox = QtGui.QVBoxLayout(self)
-    #     vbox.setSpacing(0)
-    #     vbox.addWidget(self.plot_frame)
-    #     self.setLayout(vbox)
-    #
-    # def new_curve(self, results, color=pg.intColor(0), **kwargs):
-    #     if 'pen' not in kwargs:
-    #         kwargs['pen'] = pg.mkPen(color=color, width=2)
-    #     if 'antialias' not in kwargs:
-    #         kwargs['antialias'] = False
-    #     # TODO use shadow pen as sweep color with dashed pen as plot type
-    #     kwargs.update({"pen": pg.mkPen(color=color, style=QtCore.Qt.NoPen),
-    #                    "symbol": 'o', "symbolPen": None, "symbolBrush": pg.mkBrush(color),
-    #                    "symbolSize": self._point_size, "pxMode": True})
-    #     curve = MKIDResultsCurve(results, x=self.plot_frame.x_axis,
-    #                              y=self.plot_frame.y_axis, **kwargs)
-    #     return curve
 
 
 class InputsWidget(widgets.InputsWidget):
