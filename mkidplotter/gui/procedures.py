@@ -9,6 +9,8 @@ from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
                                   Parameter)
 
+from mkidplotter.gui.parameters import DirectoryParameter
+
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
@@ -20,17 +22,30 @@ class MKIDProcedure(Procedure):
         super().__init__(*args, **kwargs)
 
     def file_name(self, time=None):
-        """Returns a unique name for saving the file depending on it's manditory
+        """Returns a unique name for saving the file depending on it's mandatory
         parameters"""
         raise NotImplementedError
 
     def emit_results(self, dictionary):
         """Wrapper for the emit function so that not all of the dictionary keys need to
         be defined in order to emit the data. Replaces empty fields with np.nan"""
+        # collect the data into a numpy structured array
+        size = max([value.size if hasattr(value, "shape") and value.shape
+                    else np.array([value]).size for value in dictionary.values()])
+        records = np.empty((size,), dtype=[(key, float) for key in self.DATA_COLUMNS])
+        records.fill(np.nan)
+        for key, value in dictionary.items():
+            try:
+                records[key][:value.size] = value
+            except AttributeError:
+                records[key][:np.array(value).size] = value
+
         for key in self.DATA_COLUMNS:
             if key not in dictionary.keys():
-                dictionary.update({key: np.nan})
-        self.emit('results', dictionary)
+                records[key] = np.nan
+
+        for index in range(size):
+            self.emit('results', records[index])
 
     def _parameter_names(self):
         """Provides an ordered list of parameter names before base class init"""
@@ -50,7 +65,8 @@ class SweepBaseProcedure(Procedure):
                 ["field", "start_field", "stop_field", "n_field"],
                 ["temperature", "start_temp", "stop_temp", "n_temp"]]
 
-    directory = Parameter("Data Directory", default="/Users/nicholaszobrist/Desktop/test")
+    directory = DirectoryParameter("Data Directory",
+                                   default="/Users/nicholaszobrist/Desktop/test")
 
     start_atten = FloatParameter("Start", units="dB", default=70)
     stop_atten = FloatParameter("Stop", units="dB", default=70)
@@ -68,7 +84,7 @@ class SweepBaseProcedure(Procedure):
 class SweepProcedure(MKIDProcedure):
     """Procedure class to subclass when making a custom mkid sweep procedure"""
     # mandatory parameters
-    directory = Parameter("Data Directory")
+    directory = DirectoryParameter("Data Directory")
     attenuation = FloatParameter("DAC Attenuation", units="dB")
     field = FloatParameter("Auxiliary Field", units="V")
     temperature = FloatParameter("Temperature", units="mK")
@@ -90,18 +106,18 @@ class TestSweep(SweepProcedure):
     take_noise = BooleanParameter("Take Noise Data", default=True)
     n_points = IntegerParameter("Number of Points", default=500)
 
-    DATA_COLUMNS = ['Index', 'I [V]', 'Q [V]', 'I2 [V]', 'Q2 [V]', "bias I", "bias Q"]
-    # 'PSD [V² / Hz]', 'frequency [Hz]']
+    DATA_COLUMNS = ['Index', 'I', 'Q', 'frequency', 'Amplitude PSD', 'Phase PSD',
+                    "bias I", "bias Q"]
 
     def startup(self):
-        pass
+        log.info("starting procedure")
 
     def execute(self):
         log.info("Measuring the loop with %d points", self.n_points)
         loop_x = np.zeros(self.n_points)
         loop_y = np.zeros(self.n_points)
         indices = np.arange(self.n_points)
-
+        # sweep frequencies
         for i in indices:
             self.emit('progress', i / self.n_points * 100)
             loop_x[i] = 70 / self.attenuation * np.cos(2 * np.pi * i /
@@ -109,29 +125,41 @@ class TestSweep(SweepProcedure):
             loop_y[i] = 70 / self.attenuation * np.sin(2 * np.pi * i /
                                                        (self.n_points - 1))
             data = {"Index": i,
-                    "I [V]": loop_x[i],
-                    "Q [V]": loop_y[i],
-                    "I2 [V]": loop_x[i],
-                    "Q2 [V]": 2 * loop_y[i]}
+                    "I": loop_x[i],
+                    "Q": loop_y[i]}
             self.emit_results(data)
             log.debug("Emitting results: %s" % data)
             sleep(.005)
             if self.should_stop():
                 log.warning("Caught the stop flag in the procedure")
                 break
+
+        # calculate bias point
         self.emit_results({"bias I": 70 / self.attenuation, "bias Q": 0})
+
+        # take noise data
+        frequency = np.linspace(1e3, 1e5, 100)
+        phase = 1 / frequency
+        amplitude = 1 / frequency[-1] * np.ones(frequency.shape)
+        data = {"frequency": frequency,
+                "Phase PSD": phase,
+                "Amplitude PSD": amplitude}
+        self.emit_results(data)
+
+        # save all the data we took
         log.info("Saving data to %s", self.directory)
         data = {"Index": indices,
-                "I [V]": loop_x,
-                "Q [V]": loop_y,
-                "I2 [V]": loop_x,
-                "Q2 [V]": 2 * loop_y,
+                "I": loop_x,
+                "Q": loop_y,
+                "frequency": frequency,
+                "Phase PSD": phase,
+                "Amplitude PSD": amplitude,
                 "bias I": 70 / self.attenuation,
                 "bias Q": 0}
         self.save(data)
 
     def shutdown(self):
-        pass
+        log.info("finished procedure")
 
     def save(self, data):
         """Save the output of the procedure"""

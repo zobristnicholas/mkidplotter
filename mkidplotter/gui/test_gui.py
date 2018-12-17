@@ -18,18 +18,16 @@ from pymeasure.display.windows import ManagedWindow
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.managers import MKIDManager
 from mkidplotter.gui.procedures import TestSweep, SweepBaseProcedure
-from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
-                                     MKIDBrowserWidget, MKIDResultsDialog)
+from mkidplotter.gui.widgets import (SweepPlotWidget, NoisePlotWidget, MKIDInputsWidget,
+                                     InputsWidget, MKIDBrowserWidget, MKIDResultsDialog)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
 class TestSweepGUI(ManagedWindow):
-    # TODO: develop noise plotting
-    # TODO: make QFileDialog for directory selection
-    def __init__(self, procedure_class, x_axes=('I [V]',),
-                 y_axes=('Q [V]',), legend_text=('sweep',),
+    def __init__(self, procedure_class, x_axes=('I',), y_axes=('Q',),
+                 x_labels=('I [V]',), y_labels=('Q [V]',), legend_text=('sweep',),
                  plot_widget_classes=(SweepPlotWidget,), plot_names=("Sweep Plot",)):
         # catch warning for data that hasn't been emitted as anything other than nan
         warnings.filterwarnings("ignore", message="All-NaN slice encountered",
@@ -44,6 +42,8 @@ class TestSweepGUI(ManagedWindow):
         self.plot_names = plot_names
         self.x_axes = x_axes
         self.y_axes = y_axes
+        self.x_labels = x_labels
+        self.y_labels = y_labels
         self.legend_text = legend_text
         # matplotlib 2.2.3 default colors
         self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44),
@@ -103,6 +103,8 @@ class TestSweepGUI(ManagedWindow):
             self.plot_widget.append(plot_widget(self.procedure_class.DATA_COLUMNS,
                                                 x_axes=self.x_axes[index],
                                                 y_axes=self.y_axes[index],
+                                                x_label=self.x_labels[index],
+                                                y_label=self.y_labels[index],
                                                 legend_text=self.legend_text[index],
                                                 color_cycle=self.color_cycle))
             self.plot.append(self.plot_widget[-1].plot)
@@ -201,9 +203,7 @@ class TestSweepGUI(ManagedWindow):
         self.resize(1200, 800)
 
     def setup_plot(self, plots):
-        for plot in plots:
-            plot.setAspectLocked(True)
-            plot.enableAutoRange(True)
+        pass
 
     def browser_item_changed(self, item, column):
         if column == 0:
@@ -280,16 +280,14 @@ class TestSweepGUI(ManagedWindow):
                 results = Results(procedure, file_path)
                 experiment = self.new_experiment(results)
                 # change the file name to the real file name if it has one
-                try:
-                    file_name = procedure.file_name(start_time)
-                    experiment.browser_item.setText(1, file_name)
-                    file_path = os.path.join(results.procedure.directory, file_name)
-                    if file_path in files:
-                        message = "'{}' is already in the queue, skipping"
-                        raise IOError(message.format(file_path))
+                file_name = procedure.file_name(start_time)
+                experiment.browser_item.setText(1, file_name)
+                file_path = os.path.join(results.procedure.directory, file_name)
+                if file_path in files:
+                    message = "'{}' is already in the queue, skipping"
+                    log.error(message.format(file_path))
+                else:
                     files.append(os.path.join(results.procedure.directory, file_name))
-                except AttributeError:
-                    pass
                 self.manager.queue(experiment)
             except Exception:
                 log.error('Failed to queue experiment', exc_info=True)
@@ -434,18 +432,18 @@ class TestSweepGUI(ManagedWindow):
 
 
 if __name__ == "__main__":
-    x_list = (('I [V]', 'bias I'), ('I2 [V]',))
-    y_list = (('Q [V]', 'bias Q'), ('Q2 [V]',))
-    legend_list = (('sweep', 'bias point'), ('sweep',))
-    # x_list = ('I [V]', 'I2 [V]')
-    # y_list = ('Q [V]', 'Q2 [V]')
-    widgets_list = (SweepPlotWidget, SweepPlotWidget)
-    names_list = ('Sweep Plot', 'Sweep Plot 2')
+    x_list = (('I', 'bias I'), ('frequency', 'frequency'))
+    y_list = (('Q', 'bias Q'), ("Amplitude PSD", "Phase PSD"))
+    x_label = ("I [V]", "frequency [Hz]")
+    y_label = ("Q [V]", "PSD [V² / Hz]")
+    legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
+    widgets_list = (SweepPlotWidget, NoisePlotWidget)
+    names_list = ('Sweep Plot', 'Noise Plot')
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(get_image_icon("loop.png"))
-    window = TestSweepGUI(TestSweep, x_axes=x_list, y_axes=y_list,
-                          legend_text=legend_list, plot_widget_classes=widgets_list,
-                          plot_names=names_list)
+    window = TestSweepGUI(TestSweep, x_axes=x_list, y_axes=y_list, x_labels=x_label,
+                          y_labels=y_label, legend_text=legend_list,
+                          plot_widget_classes=widgets_list, plot_names=names_list)
     window.show()
     ex = app.exec_()
     del app  # prevents unwanted segfault on closing the window
