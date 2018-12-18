@@ -24,11 +24,13 @@ log.addHandler(logging.NullHandler())
 
 class MKIDResultsDialog(widgets.ResultsDialog):
     def __init__(self, *args, procedure_class=None, x_axes=None, y_axes=None,
-                 legend_text=None, plot_widget_classes=None, plot_names=None,
-                 color_cycle=None, **kwargs):
+                 x_labels=None, y_labels=None, legend_text=None, plot_widget_classes=None,
+                 plot_names=None, color_cycle=None, **kwargs):
         self.procedure_class = procedure_class
         self.x_axes = x_axes
         self.y_axes = y_axes
+        self.x_labels = x_labels
+        self.y_labels = y_labels
         self.legend_text = legend_text
         self.plot_widget_classes = plot_widget_classes
         self.plot_names = plot_names
@@ -51,6 +53,8 @@ class MKIDResultsDialog(widgets.ResultsDialog):
             self.plot_widget.append(plot_widget(self.columns,
                                                 x_axes=self.x_axes[index],
                                                 y_axes=self.y_axes[index],
+                                                x_label=self.x_labels[index],
+                                                y_label=self.y_labels[index],
                                                 legend_text=self.legend_text[index],
                                                 color_cycle=color_cycle))
             self.plot.append(self.plot_widget[-1].plot)
@@ -67,10 +71,10 @@ class MKIDResultsDialog(widgets.ResultsDialog):
         param_vbox.addWidget(self.preview_param)
         param_vbox_widget.setLayout(param_vbox)
         preview_tab.addTab(param_vbox_widget, "Run Parameters")
-        self.layout().addWidget(preview_tab, 0, 5, 4, 1)
-        self.layout().setColumnStretch(5, 1)
+        self.layout().addWidget(preview_tab, 0, 3, 4, 1)
+        self.layout().setColumnStretch(3, 2)
         self.setMinimumSize(900, 500)
-        self.resize(900, 500)
+        self.resize(1200, 500)
 
         self.setFileMode(QtGui.QFileDialog.ExistingFiles)
         self.currentChanged.connect(self.update_plot)
@@ -150,7 +154,7 @@ class MKIDPlotWidget(widgets.PlotWidget):
         self.columns_y.setCurrentIndex(1)
         if self.legend_text is not None:
             style_cycle = self.style_cycle()
-            self.legend = self.plot_frame.plot_widget.addLegend(offset=(1, 1))
+            self.legend = self.plot_frame.plot_widget.addLegend(offset=(-1, 1))
             for text in self.legend_text:
                 legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
                 legend_item_sample = MKIDItemSample(legend_item)

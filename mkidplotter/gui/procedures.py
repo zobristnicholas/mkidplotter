@@ -106,11 +106,12 @@ class TestSweep(SweepProcedure):
     take_noise = BooleanParameter("Take Noise Data", default=True)
     n_points = IntegerParameter("Number of Points", default=500)
 
-    DATA_COLUMNS = ['Index', 'I', 'Q', 'frequency', 'Amplitude PSD', 'Phase PSD',
-                    "bias I", "bias Q"]
+    DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
+                    'I2', 'Q2',  "bias I2", "bias Q2", 'Amplitude PSD2', 'Phase PSD2',
+                    'frequency']
 
     def startup(self):
-        log.info("starting procedure")
+        log.info("Starting procedure")
 
     def execute(self):
         log.info("Measuring the loop with %d points", self.n_points)
@@ -124,9 +125,10 @@ class TestSweep(SweepProcedure):
                                                        (self.n_points - 1))
             loop_y[i] = 70 / self.attenuation * np.sin(2 * np.pi * i /
                                                        (self.n_points - 1))
-            data = {"Index": i,
-                    "I": loop_x[i],
-                    "Q": loop_y[i]}
+            data = {"I1": loop_x[i],
+                    "Q1": loop_y[i],
+                    "I2": loop_x[i] * 2,
+                    "Q2": loop_y[i]}
             self.emit_results(data)
             log.debug("Emitting results: %s" % data)
             sleep(.005)
@@ -134,32 +136,44 @@ class TestSweep(SweepProcedure):
                 log.warning("Caught the stop flag in the procedure")
                 break
 
-        # calculate bias point
-        self.emit_results({"bias I": 70 / self.attenuation, "bias Q": 0})
-
-        # take noise data
-        frequency = np.linspace(1e3, 1e5, 100)
-        phase = 1 / frequency
-        amplitude = 1 / frequency[-1] * np.ones(frequency.shape)
-        data = {"frequency": frequency,
-                "Phase PSD": phase,
-                "Amplitude PSD": amplitude}
-        self.emit_results(data)
+        if self.take_noise:
+            # calculate bias point
+            self.emit_results({"bias I1": 70 / self.attenuation, "bias Q1": 0})
+            self.emit_results({"bias I2": 0, "bias Q2": 70 / self.attenuation})
+            # take noise data
+            frequency = np.linspace(1e3, 1e5, 100)
+            phase = 1 / frequency
+            amplitude = 1 / frequency[-1] * np.ones(frequency.shape)
+            data = {"frequency": frequency,
+                    "Phase PSD1": phase,
+                    "Amplitude PSD1": amplitude,
+                    "Phase PSD2": phase / 2,
+                    "Amplitude PSD2": amplitude * 2}
+            self.emit_results(data)
+        else:
+            frequency = np.nan
+            phase = np.nan
+            amplitude = np.nan
 
         # save all the data we took
         log.info("Saving data to %s", self.directory)
-        data = {"Index": indices,
-                "I": loop_x,
-                "Q": loop_y,
+        data = {"I1": loop_x,
+                "Q1": loop_y,
+                "I2": loop_x * 2,
+                "Q2": loop_y,
                 "frequency": frequency,
-                "Phase PSD": phase,
-                "Amplitude PSD": amplitude,
-                "bias I": 70 / self.attenuation,
-                "bias Q": 0}
+                "Phase PSD1": phase,
+                "Amplitude PSD1": amplitude,
+                "Phase PSD2": phase / 2,
+                "Amplitude PSD2": amplitude * 2,
+                "bias I1": 70 / self.attenuation,
+                "bias Q1": 0,
+                "bias I2": 70 / self.attenuation,
+                "bias Q2": 70 / self.attenuation}
         self.save(data)
 
     def shutdown(self):
-        log.info("finished procedure")
+        log.info("Finished procedure")
 
     def save(self, data):
         """Save the output of the procedure"""

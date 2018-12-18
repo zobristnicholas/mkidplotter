@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class TestSweepGUI(ManagedWindow):
+class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, x_axes=('I',), y_axes=('Q',),
                  x_labels=('I [V]',), y_labels=('Q [V]',), legend_text=('sweep',),
                  plot_widget_classes=(SweepPlotWidget,), plot_names=("Sweep Plot",)):
@@ -178,7 +178,7 @@ class TestSweepGUI(ManagedWindow):
         tabs = QtGui.QTabWidget(self.main)
         for index, plot_widget in enumerate(self.plot_widget):
             tabs.addTab(plot_widget, self.plot_names[index])
-        tabs.addTab(self.log_widget, "Experiment Log")
+        tabs.addTab(self.log_widget, "Log")
         self.plot_widget[0].setMinimumSize(100, 200)
 
         browser_dock = QtGui.QWidget(self)
@@ -401,8 +401,9 @@ class TestSweepGUI(ManagedWindow):
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
                                    procedure_class=self.procedure_class,
-                                   x_axes=self.x_axes,
-                                   y_axes=self.y_axes, legend_text=self.legend_text,
+                                   x_axes=self.x_axes, y_axes=self.y_axes,
+                                   x_labels=self.x_labels, y_labels=self.y_labels,
+                                   legend_text=self.legend_text,
                                    plot_widget_classes=self.plot_widget_classes,
                                    plot_names=self.plot_names,
                                    color_cycle=self.color_cycle)
@@ -432,18 +433,22 @@ class TestSweepGUI(ManagedWindow):
 
 
 if __name__ == "__main__":
-    x_list = (('I', 'bias I'), ('frequency', 'frequency'))
-    y_list = (('Q', 'bias Q'), ("Amplitude PSD", "Phase PSD"))
-    x_label = ("I [V]", "frequency [Hz]")
-    y_label = ("Q [V]", "PSD [V² / Hz]")
-    legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
-    widgets_list = (SweepPlotWidget, NoisePlotWidget)
-    names_list = ('Sweep Plot', 'Noise Plot')
+    x_list = (('I1', 'bias I1'), ('frequency', 'frequency'),
+              ('I2', 'bias I2'), ('frequency', 'frequency'))
+    y_list = (('Q1', 'bias Q1'), ("Amplitude PSD1", "Phase PSD1"),
+              ('Q2', 'bias Q2'), ("Amplitude PSD2", "Phase PSD2"))
+    x_label = ("I [V]", "frequency [Hz]", "I [V]", "frequency [Hz]")
+    y_label = ("Q [V]", "PSD [V² / Hz]", "Q [V]", "PSD [V² / Hz]")
+    legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'),
+                   ('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
+    widgets_list = (SweepPlotWidget, NoisePlotWidget, SweepPlotWidget, NoisePlotWidget)
+    names_list = ('Channel 0: Sweep', 'Channel 0: Noise',
+                  'Channel 1: Sweep', 'Channel 1: Noise')
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(get_image_icon("loop.png"))
-    window = TestSweepGUI(TestSweep, x_axes=x_list, y_axes=y_list, x_labels=x_label,
-                          y_labels=y_label, legend_text=legend_list,
-                          plot_widget_classes=widgets_list, plot_names=names_list)
+    window = SweepGUI(TestSweep, x_axes=x_list, y_axes=y_list, x_labels=x_label,
+                      y_labels=y_label, legend_text=legend_list,
+                      plot_widget_classes=widgets_list, plot_names=names_list)
     window.show()
     ex = app.exec_()
     del app  # prevents unwanted segfault on closing the window
