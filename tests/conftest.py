@@ -49,7 +49,7 @@ def sweep_procedure_class():
                         "Q2": loop_y[i]}
                 self.emit_results(data)
                 log.debug("Emitting results: %s" % data)
-                sleep(.005)
+                sleep(.0001)
                 if self.should_stop():
                     log.warning("Caught the stop flag in the procedure")
                     break
@@ -147,6 +147,7 @@ def sweep_procedure_class():
 
 @pytest.fixture()
 def sweep_gui(sweep_procedure_class, caplog, qtbot):
+    # create window
     x_list = (('I1', 'bias I1'), ('frequency', 'frequency'),
               ('I2', 'bias I2'), ('frequency', 'frequency'))
     y_list = (('Q1', 'bias Q1'), ("Amplitude PSD1", "Phase PSD1"),
@@ -162,11 +163,17 @@ def sweep_gui(sweep_procedure_class, caplog, qtbot):
                       x_labels=x_label, y_labels=y_label, legend_text=legend_list,
                       plot_widget_classes=widgets_list, plot_names=names_list)
     window.show()
+    # add to qtbot so it gets tracked and deleted properly during teardown
     qtbot.addWidget(window)
+    # set a temporary directory for the tests
+    file_directory = tempfile.mkdtemp()
+    window.base_inputs_widget.directory.line_edit.clear()
+    qtbot.keyClicks(window.base_inputs_widget.directory.line_edit, file_directory)
+    # return the window
     yield window
+    # check for logging errors before teardown
     for when in ("setup", "call"):
         messages = [x.message for x in caplog.get_records(when)
                     if x.levelno > logging.INFO]
         if messages:
-            pytest.fail("Failed from logging messages: {}"
-                        .format(messages))
+            pytest.fail("Failed from logging messages: {}".format(messages))
