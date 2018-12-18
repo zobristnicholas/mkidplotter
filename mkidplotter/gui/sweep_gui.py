@@ -34,6 +34,8 @@ class SweepGUI(ManagedWindow):
                                 category=RuntimeWarning, module="numpy")
         warnings.filterwarnings("ignore", message="All-NaN axis encountered",
                                 category=RuntimeWarning, module="numpy")
+        warnings.filterwarnings("ignore", message="invalid value encountered in",
+                                category=RuntimeWarning, module="pyqtgraph")
 
         self.base_procedure_class = SweepBaseProcedure
         self.base_inputs = self.base_procedure_class().ordering

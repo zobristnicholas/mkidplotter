@@ -10,5 +10,6 @@ setup(name='mkidplotter',
       install_requires=["pymeasure",
                         "numpy",
                         "pyqtgraph",
-                        "cycler"],
+                        "cycler",
+                        "pytest"],
       zip_safe=False)
