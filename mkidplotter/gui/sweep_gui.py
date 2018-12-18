@@ -254,6 +254,11 @@ class SweepGUI(ManagedWindow):
                     curve.symbolBrush.setColor(color)
                     curve.update()
 
+    def open_file_externally(self, filename):
+        import webbrowser
+        log.info("Opening temporary file containing the plotted data")
+        webbrowser.open("file://" + filename)
+
     def queue(self):
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
