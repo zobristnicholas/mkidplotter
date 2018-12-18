@@ -1,5 +1,6 @@
 import os
 import sys
+import copy
 import logging
 import warnings
 import tempfile
@@ -34,11 +35,13 @@ class SweepGUI(ManagedWindow):
                                 category=RuntimeWarning, module="numpy")
         warnings.filterwarnings("ignore", message="All-NaN axis encountered",
                                 category=RuntimeWarning, module="numpy")
+        warnings.filterwarnings("ignore", message="All-NaN slice encountered",
+                                category=RuntimeWarning, module="pyqtgraph")
         warnings.filterwarnings("ignore", message="invalid value encountered in",
                                 category=RuntimeWarning, module="pyqtgraph")
 
         self.base_procedure_class = SweepBaseProcedure
-        self.base_inputs = self.base_procedure_class().ordering
+        self.base_inputs = copy.deepcopy(self.base_procedure_class().ordering)
         self.sweep_inputs = self.base_inputs[1:]
         self.plot_widget_classes = plot_widget_classes
         self.plot_names = plot_names
@@ -66,7 +69,6 @@ class SweepGUI(ManagedWindow):
             if not_set:
                 message = "Procedure class needs to have the {} parameter"
                 raise ValueError(message.format(inputs[0]))
-
         # grab a list of just the base_input variable names
         base_inputs = [inputs if isinstance(inputs, str) else inputs[0]
                        for inputs in self.base_inputs]

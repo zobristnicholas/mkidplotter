@@ -1,8 +1,11 @@
+import os
 import pytest
 import logging
+import tempfile
 import numpy as np
+from time import sleep
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter)
+                                  Parameter, Results)
 from pymeasure.display.Qt import QtGui, QtCore
 from mkidplotter.gui.procedures import SweepProcedure, TestSweep as TS
 from mkidplotter.gui.widgets import SweepPlotWidget, NoisePlotWidget
@@ -53,8 +56,11 @@ def sweep_procedure_class():
 
             if self.take_noise:
                 # calculate bias point
-                self.emit_results({"bias I1": 70 / self.attenuation, "bias Q1": 0})
-                self.emit_results({"bias I2": 0, "bias Q2": 70 / self.attenuation})
+                bias_i1, bias_q1 = 70 / self.attenuation, 0
+                bias_i2, bias_q2 = 0, 70 / self.attenuation
+
+                self.emit_results({"bias I1": bias_i1, "bias Q1": bias_q1})
+                self.emit_results({"bias I2": bias_i2, "bias Q2": bias_q2})
                 # take noise data
                 frequency = np.linspace(1e3, 1e5, 100)
                 phase = 1 / frequency
@@ -69,9 +75,12 @@ def sweep_procedure_class():
                 frequency = np.nan
                 phase = np.nan
                 amplitude = np.nan
+                bias_i1 = np.nan
+                bias_i2 = np.nan
+                bias_q1 = np.nan
+                bias_q2 = np.nan
 
             # save all the data we took
-            log.info("Saving data to %s", self.directory)
             data = {"I1": loop_x,
                     "Q1": loop_y,
                     "I2": loop_x * 2,
@@ -81,10 +90,10 @@ def sweep_procedure_class():
                     "Amplitude PSD1": amplitude,
                     "Phase PSD2": phase / 2,
                     "Amplitude PSD2": amplitude * 2,
-                    "bias I1": 70 / self.attenuation,
-                    "bias Q1": 0,
-                    "bias I2": 70 / self.attenuation,
-                    "bias Q2": 70 / self.attenuation}
+                    "bias I1": bias_i1,
+                    "bias Q1": bias_q1,
+                    "bias I2": bias_i2,
+                    "bias Q2": bias_q2}
             self.save(data)
 
         def shutdown(self):
@@ -94,6 +103,7 @@ def sweep_procedure_class():
             """Save the output of the procedure"""
             data.update({"parameters": self.parameter_values()})
             file_path = os.path.join(self.directory, self.file_name())
+            log.info("Saving data to %s", file_path)
             if os.path.isfile(file_path):
                 message = "{} already exists".format(file_path)
                 log.error(message)
@@ -126,6 +136,7 @@ def sweep_procedure_class():
             # make a temporary file for the gui data
             file_path = tempfile.mktemp()
             results = Results(procedure, file_path)
+            log.info("Loading the file into the temporary file %s", file_path)
             with open(file_path, mode='a') as temporary_file:
                 for index in range(size):
                     temporary_file.write(results.format(records[index]))
@@ -134,7 +145,7 @@ def sweep_procedure_class():
     return Sweep
 
 
-@pytest.fixture
+@pytest.fixture()
 def sweep_gui(sweep_procedure_class, caplog, qtbot):
     x_list = (('I1', 'bias I1'), ('frequency', 'frequency'),
               ('I2', 'bias I2'), ('frequency', 'frequency'))
@@ -152,10 +163,10 @@ def sweep_gui(sweep_procedure_class, caplog, qtbot):
                       plot_widget_classes=widgets_list, plot_names=names_list)
     window.show()
     qtbot.addWidget(window)
-    yield qtbot
+    yield window
     for when in ("setup", "call"):
         messages = [x.message for x in caplog.get_records(when)
                     if x.levelno > logging.INFO]
         if messages:
-            pytest.fail("warning messages encountered during testing: {}"
+            pytest.fail("Failed from logging messages: {}"
                         .format(messages))

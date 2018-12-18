@@ -11,5 +11,6 @@ setup(name='mkidplotter',
                         "numpy",
                         "pyqtgraph",
                         "cycler",
-                        "pytest"],
+                        "pytest",
+                        "pytest-qt"],
       zip_safe=False)

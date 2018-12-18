@@ -138,8 +138,11 @@ class TestSweep(SweepProcedure):
 
         if self.take_noise:
             # calculate bias point
-            self.emit_results({"bias I1": 70 / self.attenuation, "bias Q1": 0})
-            self.emit_results({"bias I2": 0, "bias Q2": 70 / self.attenuation})
+            bias_i1, bias_q1 = 70 / self.attenuation, 0
+            bias_i2, bias_q2 = 0, 70 / self.attenuation
+
+            self.emit_results({"bias I1": bias_i1, "bias Q1": bias_q1})
+            self.emit_results({"bias I2": bias_i2, "bias Q2": bias_q2})
             # take noise data
             frequency = np.linspace(1e3, 1e5, 100)
             phase = 1 / frequency
@@ -154,9 +157,12 @@ class TestSweep(SweepProcedure):
             frequency = np.nan
             phase = np.nan
             amplitude = np.nan
+            bias_i1 = np.nan
+            bias_i2 = np.nan
+            bias_q1 = np.nan
+            bias_q2 = np.nan
 
         # save all the data we took
-        log.info("Saving data to %s", self.directory)
         data = {"I1": loop_x,
                 "Q1": loop_y,
                 "I2": loop_x * 2,
@@ -166,10 +172,10 @@ class TestSweep(SweepProcedure):
                 "Amplitude PSD1": amplitude,
                 "Phase PSD2": phase / 2,
                 "Amplitude PSD2": amplitude * 2,
-                "bias I1": 70 / self.attenuation,
-                "bias Q1": 0,
-                "bias I2": 70 / self.attenuation,
-                "bias Q2": 70 / self.attenuation}
+                "bias I1": bias_i1,
+                "bias Q1": bias_q1,
+                "bias I2": bias_i2,
+                "bias Q2": bias_q2}
         self.save(data)
 
     def shutdown(self):
