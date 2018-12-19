@@ -238,16 +238,21 @@ class SweepGUI(ManagedWindow):
         color = QtGui.QColorDialog.getColor(
             initial=experiment.curve[0][0].opts['symbolBrush'].color(), parent=self)
         if color.isValid():
-            pixelmap = QtGui.QPixmap(24, 24)
-            pixelmap.fill(color)
-            # setIcon breaks auto-ranging when hiding/showing the plot
-            # see comment in self.browser_item_changed()
-            experiment.browser_item.setIcon(0, QtGui.QIcon(pixelmap))
-            for index, _ in enumerate(self.plot):
-                for _, curve in enumerate(experiment.curve[index]):
+            self.update_color(experiment, color)
+
+    def update_color(self, experiment, color):
+        pixelmap = QtGui.QPixmap(24, 24)
+        pixelmap.fill(color)
+        # setIcon breaks auto-ranging when hiding/showing the plot
+        # see comment in self.browser_item_changed()
+        experiment.browser_item.setIcon(0, QtGui.QIcon(pixelmap))
+        for index, _ in enumerate(self.plot):
+            for _, curve in enumerate(experiment.curve[index]):
+                if curve.pen is not None:
                     curve.pen.setColor(color)
+                if curve.symbolBrush is not None:
                     curve.symbolBrush.setColor(color)
-                    curve.update()
+                curve.update()
 
     def open_file_externally(self, filename):
         import webbrowser

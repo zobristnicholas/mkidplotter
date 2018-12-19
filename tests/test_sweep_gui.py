@@ -83,3 +83,13 @@ def test_load(sweep_gui, qtbot, request):
         assert key in saved_sweep.keys(), message.format(key)
         message = "the saved and loaded values for {} are different"
         assert value == saved_sweep[key], message.format(key)
+
+
+@pytest.mark.qt_log_level_fail("WARNING")
+def test_color_change(sweep_gui, qtbot):
+    with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
+        qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
+    item = sweep_gui.browser.topLevelItem(0)
+    experiment = sweep_gui.manager.experiments.with_browser_item(item)
+    color = QtGui.QColor(255, 0, 0)
+    sweep_gui.update_color(experiment, color)
