@@ -65,8 +65,7 @@ class SweepBaseProcedure(Procedure):
                 ["field", "start_field", "stop_field", "n_field"],
                 ["temperature", "start_temp", "stop_temp", "n_temp"]]
 
-    directory = DirectoryParameter("Data Directory",
-                                   default="/Users/nicholaszobrist/Desktop/test")
+    directory = DirectoryParameter("Data Directory", default="/")
 
     start_atten = FloatParameter("Start", units="dB", default=70)
     stop_atten = FloatParameter("Stop", units="dB", default=70)

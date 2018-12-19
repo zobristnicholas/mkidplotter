@@ -33,7 +33,7 @@ def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
     n_sweep = n_atten * n_field * n_temp
     qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
     for _ in range(n_sweep):
-        with qtbot.waitSignal(sweep_gui.manager.finished, timeout=400, raising=True):
+        with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
             pass
     # check that everything went well
     assert os.path.isdir(directory), "the output directory does not exist"
