@@ -50,6 +50,11 @@ class SweepGUI(ManagedWindow):
         self.x_labels = x_labels
         self.y_labels = y_labels
         self.legend_text = legend_text
+        # initialize browser actions so they can be saved for testing
+        self.action_open = None
+        self.action_remove = None
+        self.action_use = None
+        self.action_change_color = None
         # matplotlib 2.2.3 default colors
         self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44),
                                          (214, 39, 40), (148, 103, 189), (140, 86, 75),
@@ -363,49 +368,53 @@ class SweepGUI(ManagedWindow):
 
     def browser_item_menu(self, position):
         item = self.browser.itemAt(position)
-
         if item is not None:
-            experiment = self.manager.experiments.with_browser_item(item)
-            menu = QtGui.QMenu(self)
-
-            # Open
-            action_open = QtGui.QAction(menu)
-            action_open.setText("Open Data Externally")
-            action_open.triggered.connect(
-                lambda: self.open_file_externally(experiment.results.data_filename))
-            menu.addAction(action_open)
-
-            # Change Color
-            action_change_color = QtGui.QAction(menu)
-            action_change_color.setText("Change Color")
-            action_change_color.triggered.connect(
-                lambda: self.change_color(experiment))
-            menu.addAction(action_change_color)
-
-            # Remove
-            action_remove = QtGui.QAction(menu)
-            action_remove.setText("Remove Graph")
-            if self.manager.is_running():
-                if self.manager.running_experiment() == experiment:  # Experiment running
-                    action_remove.setEnabled(False)
-            action_remove.triggered.connect(lambda: self.remove_experiment(experiment))
-            menu.addAction(action_remove)
-
-            # Use parameters
-            def set_parameters(chosen_experiment):
-                sweep_parameters = self.base_procedure_class().parameter_objects()
-                parameters = chosen_experiment.procedure.parameter_objects()
-                for input_list in self.sweep_inputs:
-                    sweep_parameters[input_list[1]] = parameters[input_list[0]]
-                    sweep_parameters[input_list[2]] = parameters[input_list[0]]
-                    sweep_parameters[input_list[3]] = sweep_parameters[input_list[3]]
-                self.inputs.set_parameters(parameters)
-                self.base_inputs_widget.set_parameters(sweep_parameters)
-            action_use = QtGui.QAction(menu)
-            action_use.setText("Use These Parameters")
-            action_use.triggered.connect(lambda: set_parameters(experiment))
-            menu.addAction(action_use)
+            menu = self.define_browser_menu(item)
             menu.exec_(self.browser.viewport().mapToGlobal(position))
+
+    def define_browser_menu(self, item):
+        experiment = self.manager.experiments.with_browser_item(item)
+        menu = QtGui.QMenu(self)
+
+        # Open
+        self.action_open = QtGui.QAction(menu)
+        self.action_open.setText("Open Data Externally")
+        self.action_open.triggered.connect(
+            lambda: self.open_file_externally(experiment.results.data_filename))
+        menu.addAction(self.action_open)
+
+        # Change Color
+        self.action_change_color = QtGui.QAction(menu)
+        self.action_change_color.setText("Change Color")
+        self.action_change_color.triggered.connect(
+            lambda: self.change_color(experiment))
+        menu.addAction(self.action_change_color)
+
+        # Remove
+        self.action_remove = QtGui.QAction(menu)
+        self.action_remove.setText("Remove Graph")
+        if self.manager.is_running():
+            if self.manager.running_experiment() == experiment:  # Experiment running
+                self.action_remove.setEnabled(False)
+        self.action_remove.triggered.connect(
+            lambda: self.remove_experiment(experiment))
+        menu.addAction(self.action_remove)
+
+        # Use parameters
+        def set_parameters(chosen_experiment):
+            sweep_parameters = self.base_procedure_class().parameter_objects()
+            parameters = chosen_experiment.procedure.parameter_objects()
+            for input_list in self.sweep_inputs:
+                sweep_parameters[input_list[1]] = parameters[input_list[0]]
+                sweep_parameters[input_list[2]] = parameters[input_list[0]]
+                sweep_parameters[input_list[3]] = sweep_parameters[input_list[3]]
+            self.inputs.set_parameters(parameters)
+            self.base_inputs_widget.set_parameters(sweep_parameters)
+        self.action_use = QtGui.QAction(menu)
+        self.action_use.setText("Use These Parameters")
+        self.action_use.triggered.connect(lambda: set_parameters(experiment))
+        menu.addAction(self.action_use)
+        return menu
 
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
@@ -418,27 +427,30 @@ class SweepGUI(ManagedWindow):
                                    color_cycle=self.color_cycle)
         if dialog.exec_():
             file_names = dialog.selectedFiles()
-            for file_name in map(str, file_names):
-                if file_name in self.manager.experiments:
-                    message = "The file %s cannot be opened twice."
-                    QtGui.QMessageBox.warning(self, "Load Error",
-                                              message % os.path.basename(file_name))
-                elif file_name == '':
-                    return
-                else:
-                    try:
-                        results = self.procedure_class().load(file_name)
-                    except Exception:
-                        results = Results.load(file_name)
-                    results.procedure.status = SweepBaseProcedure.FINISHED
-                    experiment = self.new_experiment(results)
-                    for index, _ in enumerate(self.plot):
-                        for _, curve in enumerate(experiment.curve[index]):
-                            curve.update()
-                    experiment.browser_item.setText(1, os.path.basename(file_name))
-                    experiment.browser_item.progressbar.setValue(100.)
-                    self.manager.load(experiment)
-                    log.info('Opened data file %s' % file_name)
+            self.load_from_file(file_names)
+
+    def load_from_file(self, file_names):
+        for file_name in map(str, file_names):
+            if file_name in self.manager.experiments:
+                message = "The file %s cannot be opened twice."
+                QtGui.QMessageBox.warning(self, "Load Error",
+                                          message % os.path.basename(file_name))
+            elif file_name == '':
+                return
+            else:
+                try:
+                    results = self.procedure_class().load(file_name)
+                except Exception:
+                    results = Results.load(file_name)
+                results.procedure.status = SweepBaseProcedure.FINISHED
+                experiment = self.new_experiment(results)
+                for index, _ in enumerate(self.plot):
+                    for _, curve in enumerate(experiment.curve[index]):
+                        curve.update()
+                experiment.browser_item.setText(1, os.path.basename(file_name))
+                experiment.browser_item.progressbar.setValue(100.)
+                self.manager.load(experiment)
+                log.info('Opened data file %s' % file_name)
 
 
 if __name__ == "__main__":
