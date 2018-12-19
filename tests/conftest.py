@@ -18,6 +18,7 @@ log.addHandler(logging.NullHandler())
 @pytest.fixture
 def sweep_procedure_class():
     """Returns a test sweep procedure"""
+    # TODO: make mock procedure
     class Sweep(SweepProcedure):
         frequency = FloatParameter("Center Frequency", units="GHz", default=4.0)
         span = FloatParameter("Span", units="MHz", default=2)
