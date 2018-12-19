@@ -6,6 +6,8 @@ SWEEP_PARAMETERS = ["start_atten", "stop_atten", "n_atten",
                     "start_field", "stop_field", "n_field",
                     "start_temp", "stop_temp", "n_temp"]
 
+PROCEDURE_PARAMETERS = ["frequency", "span", "take_noise", "n_points"]
+
 
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_init(sweep_gui, qtbot):
@@ -14,15 +16,20 @@ def test_init(sweep_gui, qtbot):
 
 @pytest.mark.parametrize("start_atten, stop_atten, n_atten, "
                          "start_field, stop_field, n_field, "
-                         "start_temp, stop_temp, n_temp",
-                         [(80, 100, 2, 0, 4, 2, 100, 200, 2),
-                          (90, 90, 1, 2, 2, 1, 300, 300, 1)])
+                         "start_temp, stop_temp, n_temp, "
+                         "frequency, span, take_noise, n_points",
+                         [(80, 100, 2, 0, 4, 2, 100, 200, 2, 5, 2, True, 400),
+                          (90, 90, 1, 2, 2, 1, 300, 300, 1, 1, 3, False, 300)])
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
-               start_field, stop_field, n_field, start_temp, stop_temp, n_temp):
+               start_field, stop_field, n_field, start_temp, stop_temp, n_temp,
+               frequency, span, take_noise, n_points):
     # set the sweep parameters
     for parameter in SWEEP_PARAMETERS:
         parameter_input = getattr(sweep_gui.base_inputs_widget, parameter)
+        parameter_input.setValue(locals()[parameter])
+    for parameter in PROCEDURE_PARAMETERS:
+        parameter_input = getattr(sweep_gui.inputs, parameter)
         parameter_input.setValue(locals()[parameter])
     # grab the directory and sweep parameters for the run and cache them
     directory = sweep_gui.base_inputs_widget.directory.value()
