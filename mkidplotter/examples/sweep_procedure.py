@@ -20,6 +20,7 @@ class Sweep(SweepProcedure):
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
                     'I2', 'Q2', "bias I2", "bias Q2", 'Amplitude PSD2', 'Phase PSD2',
                     'frequency']
+    wait_time = 0.01
 
     def startup(self):
         log.info("Starting procedure")
@@ -42,7 +43,7 @@ class Sweep(SweepProcedure):
                     "Q2": loop_y[i]}
             self.emit_results(data)
             log.debug("Emitting results: %s" % data)
-            sleep(.01)
+            sleep(self.wait_time)
             if self.should_stop():
                 log.warning("Caught the stop flag in the procedure")
                 break
@@ -129,7 +130,7 @@ class Sweep(SweepProcedure):
         # make a temporary file for the gui data
         file_path = tempfile.mktemp()
         results = Results(procedure, file_path)
-        log.info("Loading the file into the temporary file %s", file_path)
+        log.info("Loading dataset into the temporary file %s", file_path)
         with open(file_path, mode='a') as temporary_file:
             for index in range(size):
                 temporary_file.write(results.format(records[index]))

@@ -18,7 +18,7 @@ from pymeasure.display.windows import ManagedWindow
 
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.managers import MKIDManager
-from mkidplotter.gui.procedures import TestSweep, SweepBaseProcedure
+from mkidplotter.gui.procedures import SweepBaseProcedure
 from mkidplotter.gui.widgets import (SweepPlotWidget, NoisePlotWidget, MKIDInputsWidget,
                                      InputsWidget, MKIDBrowserWidget, MKIDResultsDialog)
 
@@ -431,7 +431,7 @@ class SweepGUI(ManagedWindow):
             else:
                 try:
                     results = self.procedure_class().load(file_name)
-                except Exception:
+                except AttributeError:
                     results = Results.load(file_name)
                 results.procedure.status = SweepBaseProcedure.FINISHED
                 experiment = self.new_experiment(results)
