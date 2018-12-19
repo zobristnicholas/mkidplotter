@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='mkidplotter',
-      version='0.1',
+      version='0.2',
       description='Plotting and GUI tools for analyzing MKID data',
       url='http://github.com/zobristnicholas/mkidplotter',
       author='Nicholas Zobrist',
