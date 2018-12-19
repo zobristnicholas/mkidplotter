@@ -76,5 +76,3 @@ def test_load(sweep_gui, qtbot, request):
         assert key in saved_sweep.keys(), message.format(key)
         message = "the saved and loaded values for {} are different"
         assert value == saved_sweep[key], message.format(key)
-
-

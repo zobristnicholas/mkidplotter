@@ -1,17 +1,13 @@
 import os
-import pytest
 import logging
 import tempfile
 import numpy as np
 from time import sleep
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
                                   Parameter, Results)
-from pymeasure.display.Qt import QtGui, QtCore
 from mkidplotter.gui.procedures import SweepProcedure
-from mkidplotter.gui.widgets import SweepPlotWidget, NoisePlotWidget
-from mkidplotter.gui.sweep_gui import SweepGUI
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
@@ -46,7 +42,7 @@ class Sweep(SweepProcedure):
                     "Q2": loop_y[i]}
             self.emit_results(data)
             log.debug("Emitting results: %s" % data)
-            sleep(.0001)
+            sleep(.01)
             if self.should_stop():
                 log.warning("Caught the stop flag in the procedure")
                 break
@@ -139,43 +135,3 @@ class Sweep(SweepProcedure):
                 temporary_file.write(results.format(records[index]))
                 temporary_file.write(os.linesep)
         return results
-
-
-@pytest.fixture
-def sweep_procedure_class():
-    """Returns a test sweep procedure"""
-    return Sweep
-
-
-@pytest.fixture()
-def sweep_gui(sweep_procedure_class, caplog, qtbot):
-    # create window
-    x_list = (('I1', 'bias I1'), ('frequency', 'frequency'),
-              ('I2', 'bias I2'), ('frequency', 'frequency'))
-    y_list = (('Q1', 'bias Q1'), ("Amplitude PSD1", "Phase PSD1"),
-              ('Q2', 'bias Q2'), ("Amplitude PSD2", "Phase PSD2"))
-    x_label = ("I [V]", "frequency [Hz]", "I [V]", "frequency [Hz]")
-    y_label = ("Q [V]", "PSD [V² / Hz]", "Q [V]", "PSD [V² / Hz]")
-    legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'),
-                   ('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
-    widgets_list = (SweepPlotWidget, NoisePlotWidget, SweepPlotWidget, NoisePlotWidget)
-    names_list = ('Channel 0: Sweep', 'Channel 0: Noise',
-                  'Channel 1: Sweep', 'Channel 1: Noise')
-    window = SweepGUI(sweep_procedure_class, x_axes=x_list, y_axes=y_list,
-                      x_labels=x_label, y_labels=y_label, legend_text=legend_list,
-                      plot_widget_classes=widgets_list, plot_names=names_list)
-    window.show()
-    # add to qtbot so it gets tracked and deleted properly during teardown
-    qtbot.addWidget(window)
-    # set a temporary directory for the tests
-    file_directory = tempfile.mkdtemp()
-    window.base_inputs_widget.directory.line_edit.clear()
-    qtbot.keyClicks(window.base_inputs_widget.directory.line_edit, file_directory)
-    # return the window
-    yield window
-    # check for logging errors before teardown
-    for when in ("setup", "call"):
-        messages = [x.message for x in caplog.get_records(when)
-                    if x.levelno > logging.INFO]
-        if messages:
-            pytest.fail("Failed from logging messages: {}".format(messages))
