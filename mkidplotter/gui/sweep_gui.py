@@ -394,6 +394,7 @@ class SweepGUI(ManagedWindow):
         def set_parameters(chosen_experiment):
             sweep_parameters = self.base_procedure_class().parameter_objects()
             parameters = chosen_experiment.procedure.parameter_objects()
+            sweep_parameters[self.base_inputs[0]] = parameters[self.base_inputs[0]]
             for input_list in self.sweep_inputs:
                 sweep_parameters[input_list[1]] = parameters[input_list[0]]
                 sweep_parameters[input_list[2]] = parameters[input_list[0]]
