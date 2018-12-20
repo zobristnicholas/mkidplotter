@@ -1,12 +1,14 @@
 import os
 import pytest
+import numpy as np
 from pymeasure.display.Qt import QtCore, QtGui
 
 SWEEP_PARAMETERS = ["start_atten", "stop_atten", "n_atten",
                     "start_field", "stop_field", "n_field",
-                    "start_temp", "stop_temp", "n_temp"]
+                    "start_temp", "stop_temp", "n_temp",
+                    "frequencies1", "spans1", "frequencies2", "spans2"]
 
-PROCEDURE_PARAMETERS = ["frequency", "span", "take_noise", "n_points"]
+PROCEDURE_PARAMETERS = ["take_noise", "n_points"]
 
 
 @pytest.mark.qt_log_level_fail("WARNING")
@@ -17,13 +19,22 @@ def test_init(sweep_gui, qtbot):
 @pytest.mark.parametrize("start_atten, stop_atten, n_atten, "
                          "start_field, stop_field, n_field, "
                          "start_temp, stop_temp, n_temp, "
-                         "frequency, span, take_noise, n_points",
-                         [(80, 100, 2, 0, 4, 2, 100, 200, 2, 5, 2, True, 400),
-                          (90, 90, 1, 2, 2, 1, 300, 300, 1, 1, 3, False, 300)])
+                         "frequencies1, spans1, frequencies2, spans2,"
+                         "take_noise, n_points",
+                         [(80, 100, 2,
+                           0, 4, 2,
+                           100, 200, 2,
+                           [5.0, 6], 3.0, 7.0, 2.0,
+                           True, 400),
+                          (90, 90, 1,
+                           2, 2, 1,
+                           300, 300, 1,
+                           5.0, 2.0, 4.0, 3.0,
+                           False, 300)])
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
                start_field, stop_field, n_field, start_temp, stop_temp, n_temp,
-               frequency, span, take_noise, n_points):
+               frequencies1, spans1, frequencies2, spans2, take_noise, n_points):
     # set the sweep parameters
     for parameter in SWEEP_PARAMETERS:
         parameter_input = getattr(sweep_gui.base_inputs_widget, parameter)
@@ -39,7 +50,8 @@ def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
     request.config.cache.set('saved_parameters', saved_parameters)
     request.config.cache.set('saved_sweep', saved_sweep)
     # start the queue and wait until it's finished
-    n_sweep = n_atten * n_field * n_temp
+    n_freq = np.max([np.array(frequencies1).size, np.array(frequencies2).size])
+    n_sweep = n_atten * n_field * n_temp * n_freq
     qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
     for _ in range(n_sweep):
         with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
@@ -50,11 +62,37 @@ def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
     n_files = len(files)
     message = "there should be {} not {} files in the output directory"
     assert len(files) == n_sweep, message.format(n_sweep, n_files)
+    shown_names = []
+    for experiment in sweep_gui.manager.experiments.queue:
+        shown_names.append(experiment.browser_item.text(1))
+    for file_ in files:
+        assert file_ in shown_names, "{} not in {}".format(file_, shown_names)
+    for file_ in shown_names:
+        assert file_ in files, "{} not in {}".format(file_, files)
     assert files[0].split('.')[-1] == "npz", "the output file has the wrong extension"
 
 
 @pytest.mark.qt_log_level_fail("WARNING")
-def test_load(sweep_gui, qtbot, request):
+def test_color_change(sweep_gui, qtbot):
+    n_atten = sweep_gui.base_inputs_widget.n_atten.value()
+    n_field = sweep_gui.base_inputs_widget.n_field.value()
+    n_temp = sweep_gui.base_inputs_widget.n_temp.value()
+    frequencies1 = sweep_gui.base_inputs_widget.frequencies1.value()
+    frequencies2 = sweep_gui.base_inputs_widget.frequencies2.value()
+    n_freq = np.max([np.array(frequencies1).size, np.array(frequencies2).size])
+    n_sweep = n_atten * n_field * n_temp * n_freq
+    qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
+    for _ in range(n_sweep):
+        with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
+            pass
+    item = sweep_gui.browser.topLevelItem(0)
+    experiment = sweep_gui.manager.experiments.with_browser_item(item)
+    color = QtGui.QColor(255, 0, 0)
+    sweep_gui.update_color(experiment, color)
+
+
+@pytest.mark.qt_log_level_fail("WARNING")
+def test_load_and_run(sweep_gui, qtbot, request):
     # grab a previously saved data set and load it
     saved_directory = request.config.cache.get("directory", None)
     saved_parameters = request.config.cache.get("saved_parameters", None)
@@ -83,16 +121,7 @@ def test_load(sweep_gui, qtbot, request):
         assert key in saved_sweep.keys(), message.format(key)
         message = "the saved and loaded values for {} are different"
         assert value == saved_sweep[key], message.format(key)
-
-
-# TODO: Test load then run
-# TODO: Test save file name == display file name
-
-@pytest.mark.qt_log_level_fail("WARNING")
-def test_color_change(sweep_gui, qtbot):
+    # run the loaded file
     with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
         qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
-    item = sweep_gui.browser.topLevelItem(0)
-    experiment = sweep_gui.manager.experiments.with_browser_item(item)
-    color = QtGui.QColor(255, 0, 0)
-    sweep_gui.update_color(experiment, color)
+    # TODO: understand why this test breaks any that come after it

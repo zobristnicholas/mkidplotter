@@ -75,7 +75,7 @@ from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
                                   Parameter)
 
-from analogreadout.parameters import DirectoryParameter
+from mkidplotter.gui.parameters import DirectoryParameter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -89,6 +89,9 @@ class MKIDProcedure(Procedure):
 
     def file_name(self, numbers=(0,), time=None):
         """Returns a unique name for saving the file"""
+        if self._file_name is not None:
+            return self._file_name
+
         if not isinstance(numbers, (list, tuple)):
             numbers = [numbers]
         base = "sweep_"
@@ -99,7 +102,8 @@ class MKIDProcedure(Procedure):
             base = datetime.now().strftime(base)
         else:
             base = time.strftime(base)
-        return base + ".npz"
+        self._file_name = base
+        return self._file_name
 
     def emit_results(self, dictionary):
         """Wrapper for the emit function so that not all of the dictionary keys need to

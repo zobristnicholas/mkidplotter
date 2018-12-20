@@ -271,7 +271,6 @@ class InputsWidget(widgets.InputsWidget):
         for name in self._inputs:
             parameter = parameter_objects[name]
             element = getattr(self, name)
-            element._parameter = parameter
             element.setValue(parameter.value)
             if hasattr(parameter, 'units') and parameter.units:
                 element.setSuffix(" %s" % parameter.units)

@@ -1,21 +1,21 @@
 import pytest
 import logging
 import tempfile
-from mkidplotter.examples.sweep_procedure import Sweep
-from mkidplotter.examples.sweep_gui import sweep_window
+import mkidplotter.examples.sweep_gui as gui
+import mkidplotter.examples.sweep_procedure as procedure
 
 
 @pytest.fixture
 def sweep_procedure_class():
     """Returns a test sweep procedure"""
-    Sweep.wait_time = 0.0001
-    return Sweep
+    procedure.Sweep.wait_time = 0.0001
+    return procedure.Sweep
 
 
 @pytest.fixture()
 def sweep_gui(sweep_procedure_class, caplog, qtbot):
     # create window
-    window = sweep_window()
+    window = gui.sweep_window()
     window.show()
     # add to qtbot so it gets tracked and deleted properly during teardown
     qtbot.addWidget(window)
