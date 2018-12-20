@@ -36,7 +36,7 @@ class NoiseResultsCurve(MKIDResultsCurve):
         data = self.results.data  # get the current snapshot
 
         # Set x-y data
-        logic = np.logical_not(np.isnan(data[self.x]))
+        logic = np.logical_not(pd.isnull(data[self.x]))
         data = data[logic].reset_index()
         x_data = data[self.x]
         y_data = data[self.y]
