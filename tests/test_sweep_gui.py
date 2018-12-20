@@ -85,6 +85,9 @@ def test_load(sweep_gui, qtbot, request):
         assert value == saved_sweep[key], message.format(key)
 
 
+# TODO: Test load then run
+# TODO: Test save file name == display file name
+
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_color_change(sweep_gui, qtbot):
     with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):

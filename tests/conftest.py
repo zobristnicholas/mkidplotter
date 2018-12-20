@@ -1,20 +1,8 @@
-import os
 import pytest
 import logging
 import tempfile
-import numpy as np
-from time import sleep
-from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter, Results)
-from pymeasure.display.Qt import QtGui, QtCore
-from mkidplotter.gui.procedures import SweepProcedure
-from mkidplotter.gui.widgets import SweepPlotWidget, NoisePlotWidget
-from mkidplotter.gui.sweep_gui import SweepGUI
 from mkidplotter.examples.sweep_procedure import Sweep
 from mkidplotter.examples.sweep_gui import sweep_window
-
-log = logging.getLogger()
-log.addHandler(logging.NullHandler())
 
 
 @pytest.fixture
