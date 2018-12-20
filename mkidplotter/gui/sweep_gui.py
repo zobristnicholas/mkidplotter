@@ -1,12 +1,8 @@
 import os
-import sys
 import copy
 import logging
-import warnings
 import tempfile
 import numpy as np
-import pyqtgraph as pg
-from time import sleep
 from cycler import cycler
 from datetime import datetime
 from pymeasure.experiment import Results
@@ -18,21 +14,24 @@ from pymeasure.display.windows import ManagedWindow
 
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.managers import MKIDManager
-from mkidplotter.gui.procedures import SweepBaseProcedure
-from mkidplotter.gui.widgets import (SweepPlotWidget, NoisePlotWidget, MKIDInputsWidget,
-                                     InputsWidget, MKIDBrowserWidget, MKIDResultsDialog)
+from mkidplotter.gui.procedures import SweepGUIProcedure
+from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
+                                     MKIDBrowserWidget, MKIDResultsDialog)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
 class SweepGUI(ManagedWindow):
-    def __init__(self, procedure_class, x_axes=('I',), y_axes=('Q',),
-                 x_labels=('I [V]',), y_labels=('Q [V]',), legend_text=('sweep',),
-                 plot_widget_classes=(SweepPlotWidget,), plot_names=("Sweep Plot",)):
-        self.base_procedure_class = SweepBaseProcedure
-        self.base_inputs = copy.deepcopy(self.base_procedure_class().ordering)
-        self.sweep_inputs = self.base_inputs[1:]
+    def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
+                 x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
+                 legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
+                 plot_names=("Sweep Plot",)):
+        self.base_procedure_class = base_procedure_class
+        self.ordering = copy.deepcopy(self.base_procedure_class().ordering)
+        self.sweep_inputs = self.ordering["sweep_inputs"]
+        self.directory_inputs = self.ordering["directory_inputs"]
+        self.frequency_inputs = self.ordering["frequency_inputs"]
         self.plot_widget_classes = plot_widget_classes
         self.plot_names = plot_names
         self.x_axes = x_axes
@@ -65,8 +64,9 @@ class SweepGUI(ManagedWindow):
                 message = "Procedure class needs to have the {} parameter"
                 raise ValueError(message.format(inputs[0]))
         # grab a list of just the base_input variable names
-        base_inputs = [inputs if isinstance(inputs, str) else inputs[0]
-                       for inputs in self.base_inputs]
+        base_inputs = [self.directory_inputs]
+        base_inputs += [inputs[0] for inputs in self.frequency_inputs]
+        base_inputs += [inputs[0] for inputs in self.sweep_inputs]
         # create a list of all the non-required parameters
         inputs = []
         for parameter in parameters:
@@ -125,7 +125,7 @@ class SweepGUI(ManagedWindow):
         self.inputs = InputsWidget(self.procedure_class, self.inputs,
                                    parent=self)
         self.base_inputs_widget = MKIDInputsWidget(self.base_procedure_class,
-                                                   self.base_inputs, parent=self)
+                                                   self.ordering, parent=self)
 
         self.manager = MKIDManager(self.plot, self.browser,
                                    log_level=self.log_level, parent=self)
@@ -260,6 +260,7 @@ class SweepGUI(ManagedWindow):
         webbrowser.open("file://" + filename)
 
     def queue(self):
+        # _procedure = self.base_inputs_widget._procedure_class()
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
         sweeps = []
@@ -275,31 +276,70 @@ class SweepGUI(ManagedWindow):
         sweep_grid = [grid.T for grid in sweep_grid]
         start_time = datetime.now()
         files = []
+        # make the procedure
+        procedure = self.make_procedure()
+        parameter_values = procedure.parameter_values()
+        # set the directory parameter
+        parameter_values.update(
+            {self.directory_inputs: sweep_dict[self.directory_inputs]})
+        # parse the frequency list
+        try:
+            freq_dict = {}
+            n_freq = 0
+            for parameter, sweep_parameter in self.frequency_inputs:
+                f_list = sweep_dict[sweep_parameter]
+                freq_dict[parameter] = f_list
+                # enforce span lists are the same length or have one value
+                if n_freq == 0:
+                    n_freq = len(f_list)
+                elif n_freq == 1 and len(f_list) != 0:
+                    n_freq = len(f_list)
+                else:
+                    condition = (n_freq == len(f_list) or len(f_list) == 1 or
+                                 len(f_list) == 0)
+                    assert condition
+            assert n_freq != 0
+        except (ValueError, AssertionError):
+            log.error("Invalid frequency and span lists")
+            return
+        # loop over sweep parameters
         for index, _ in np.ndenumerate(sweep_grid[0]):
-            procedure = self.make_procedure()
-            parameter_values = procedure.parameter_values()
+            # set sweep parameters
             for item, (parameter, _, _, _, _) in enumerate(self.sweep_inputs):
                 value = sweep_grid[item][index]
                 parameter_values.update({parameter: value})
-            parameter_values.update(
-                {self.base_inputs[0]: sweep_dict[self.base_inputs[0]]})
-            procedure.set_parameters(parameter_values)
-            try:
-                file_path = tempfile.mktemp()
-                results = Results(procedure, file_path)
-                experiment = self.new_experiment(results)
-                # change the file name to the real file name if it has one
-                file_name = procedure.file_name(start_time)
-                experiment.browser_item.setText(1, file_name)
-                file_path = os.path.join(results.procedure.directory, file_name)
-                if file_path in files:
-                    message = "'{}' is already in the queue, skipping"
-                    log.error(message.format(file_path))
-                else:
-                    files.append(os.path.join(results.procedure.directory, file_name))
-                self.manager.queue(experiment)
-            except Exception:
-                log.error('Failed to queue experiment', exc_info=True)
+            # loop over frequencies
+            for f_index in range(n_freq):
+                # set the frequency parameters
+                for parameter, _ in self.frequency_inputs:
+                    f_list = freq_dict[parameter]
+                    if len(f_list) == 0:
+                        parameter_values.update({parameter: np.nan})
+                    elif len(f_list) == 1:
+                        parameter_values.update({parameter: f_list[0]})
+                    else:
+                        parameter_values.update({parameter: f_list[f_index]})
+                # update the procedure
+                procedure = self.make_procedure()  # new instance for each experiment
+                procedure.set_parameters(parameter_values)
+                # set up the experiment
+                try:
+                    file_path = tempfile.mktemp()
+                    results = Results(procedure, file_path)
+                    experiment = self.new_experiment(results)
+                    # change the file name to the real file name if it has one
+                    numbers = [f_index, *index]
+                    file_name = procedure.file_name(numbers, start_time)
+                    experiment.browser_item.setText(1, file_name)
+                    file_path = os.path.join(results.procedure.directory, file_name)
+                    if file_path in files:
+                        message = "'{}' is already in the queue, skipping"
+                        log.error(message.format(file_path))
+                    else:
+                        files.append(os.path.join(results.procedure.directory, file_name))
+                        self.manager.queue(experiment)
+                except Exception:
+                    log.error('Failed to queue experiment', exc_info=True)
 
     def resume(self):
         if self.manager.experiments.has_next():
@@ -399,11 +439,13 @@ class SweepGUI(ManagedWindow):
         def set_parameters(chosen_experiment):
             sweep_parameters = self.base_procedure_class().parameter_objects()
             parameters = chosen_experiment.procedure.parameter_objects()
-            sweep_parameters[self.base_inputs[0]] = parameters[self.base_inputs[0]]
+            sweep_parameters[self.directory_inputs].value = \
+                parameters[self.directory_inputs].value
+            for input_list in self.frequency_inputs:
+                sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
             for input_list in self.sweep_inputs:
-                sweep_parameters[input_list[1]] = parameters[input_list[0]]
-                sweep_parameters[input_list[2]] = parameters[input_list[0]]
-                sweep_parameters[input_list[3]] = sweep_parameters[input_list[3]]
+                sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
+                sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
             self.inputs.set_parameters(parameters)
             self.base_inputs_widget.set_parameters(sweep_parameters)
         self.action_use = QtGui.QAction(menu)
@@ -438,7 +480,7 @@ class SweepGUI(ManagedWindow):
                     results = self.procedure_class().load(file_name)
                 except AttributeError:
                     results = Results.load(file_name)
-                results.procedure.status = SweepBaseProcedure.FINISHED
+                results.procedure.status = SweepGUIProcedure.FINISHED
                 experiment = self.new_experiment(results)
                 for index, _ in enumerate(self.plot):
                     for _, curve in enumerate(experiment.curve[index]):

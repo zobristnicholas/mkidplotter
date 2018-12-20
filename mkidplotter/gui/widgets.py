@@ -280,8 +280,12 @@ class InputsWidget(widgets.InputsWidget):
 class MKIDInputsWidget(InputsWidget):
     def _setup_ui(self):
         parameter_objects = self._procedure.parameter_objects()
-        self._make_input(self._inputs[0], parameter_objects[self._inputs[0]])
-        for inputs in self._inputs[1:]:
+        self._make_input(self._inputs["directory_inputs"],
+                         parameter_objects[self._inputs["directory_inputs"]])
+        for inputs in self._inputs["frequency_inputs"]:
+            for name in inputs[1:]:
+                self._make_input(name, parameter_objects[name])
+        for inputs in self._inputs["sweep_inputs"]:
             for name in inputs[1:-1]:
                 self._make_input(name, parameter_objects[name])
 
@@ -325,14 +329,23 @@ class MKIDInputsWidget(InputsWidget):
         vbox.setSpacing(6)
 
         label = QtGui.QLabel()
-        label.setText(parameters[self._inputs[0]].name)
+        label.setText(parameters[self._inputs["directory_inputs"]].name)
         font = QtGui.QFont()
         font.setBold(True)
         label.setFont(font)
         vbox.addWidget(label)
-        vbox.addWidget(getattr(self, self._inputs[0]))
+        vbox.addWidget(getattr(self, self._inputs["directory_inputs"]))
+        grid = QtGui.QGridLayout()
+        for index, (_, parameter) in enumerate(self._inputs["frequency_inputs"]):
+            label = QtGui.QLabel()
+            label.setText(parameters[parameter].name)
+            grid.addWidget(label, 0, index)
+            text_edit = QtGui.QTextEdit()
+            text_edit.sizeHint = lambda: QtCore.QSize(0, 120)
+            grid.addWidget(getattr(self, parameter), 1, index)
+        vbox.addLayout(grid)
 
-        for inputs in self._inputs[1:]:
+        for inputs in self._inputs["sweep_inputs"]:
             label = QtGui.QLabel()
             label.setText(inputs[-1])
             font = QtGui.QFont()
@@ -352,8 +365,12 @@ class MKIDInputsWidget(InputsWidget):
 
             self.setLayout(vbox)
 
-        self._inputs = [self._inputs[0]] + \
-                       [item for inputs in self._inputs[1:] for item in inputs[1:-1]]
+        directory_inputs = [self._inputs["directory_inputs"]]
+        frequency_inputs = [inputs[1] for inputs in self._inputs["frequency_inputs"]]
+        sweep_inputs = [item for inputs in self._inputs["sweep_inputs"]
+                        for item in inputs[1:-1]]
+
+        self._inputs = directory_inputs + frequency_inputs + sweep_inputs
 
 
 class MKIDItemSample(ItemSample):

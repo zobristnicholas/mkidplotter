@@ -36,20 +36,34 @@ class SweepGUIProcedure(Procedure):
     n_temp = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
 
 
-class SweepProcedure(MKIDProcedure):
-    """Procedure class to subclass when making a custom mkid sweep procedure"""
-    # mandatory parameters
-    directory = DirectoryParameter("Data Directory")
-    attenuation = FloatParameter("DAC Attenuation", units="dB")
-    field = FloatParameter("Auxiliary Field", units="V")
-    temperature = FloatParameter("Temperature", units="mK")
+class SweepGUIProcedure2(Procedure):
+    """Procedure class for holding the mandatory sweep input arguments"""
+    ordering = {"directory_inputs": "directory",
+                "frequency_inputs": [["frequency1", "frequencies1"],
+                                     ["span1", "spans1"],
+                                     ["frequency2", "frequencies2"],
+                                     ["span2", "spans2"]],
+                "sweep_inputs": [
+                    ["attenuation", "start_atten", "stop_atten", "n_atten"],
+                    ["field", "start_field", "stop_field", "n_field"],
+                    ["temperature", "start_temp", "stop_temp", "n_temp"]]}
 
-    def file_name(self, time=None):
-        """Returns a unique name for saving the file depending on it's parameters"""
-        base = ("sweep_{:.1f}_{:.1f}_{:.1f}_%y%m%d_%H%M%S"
-                .format(self.attenuation, self.field, self.temperature).replace(".", "p"))
-        if time is None:
-            base = datetime.now().strftime(base)
-        else:
-            base = time.strftime(base)
-        return base + ".npz"
+    directory = DirectoryParameter("Data Directory", default="/Users/nicholaszobrist/Desktop/test")
+
+    frequencies1 = TextEditParameter("F1 List [GHz]", default=[4.0, 5.0])
+    spans1 = TextEditParameter("Span1 List [MHz]", default=[2.0])
+
+    frequencies2 = TextEditParameter("F2 List [GHz]", default=[6.0])
+    spans2 = TextEditParameter("Span2 List [MHz]", default=[2.0])
+
+    start_atten = FloatParameter("Start", units="dB", default=70)
+    stop_atten = FloatParameter("Stop", units="dB", default=70)
+    n_atten = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
+
+    start_field = FloatParameter("Start", units="V", default=0)
+    stop_field = FloatParameter("Stop", units="V", default=0)
+    n_field = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
+
+    start_temp = FloatParameter("Start", units="mK", default=100)
+    stop_temp = FloatParameter("Stop", units="mK", default=100)
+    n_temp = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
