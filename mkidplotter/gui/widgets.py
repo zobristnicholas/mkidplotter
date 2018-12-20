@@ -9,14 +9,14 @@ import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
+from analogreadout.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from pymeasure.experiment import (FloatParameter, IntegerParameter, BooleanParameter,
                                   ListParameter, Parameter)
 from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput,
                                       ListInput, StringInput)
 
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
-from mkidplotter.gui.parameters import FileParameter, DirectoryParameter
-from mkidplotter.gui.inputs import FileInput, DirectoryInput
+from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -306,6 +306,9 @@ class MKIDInputsWidget(InputsWidget):
 
         elif isinstance(parameter, DirectoryParameter):
             element = DirectoryInput(parameter)
+
+        elif isinstance(parameter, TextEditParameter):
+            element = FloatTextEditInput(parameter)
 
         elif isinstance(parameter, Parameter):
             element = StringInput(parameter)
