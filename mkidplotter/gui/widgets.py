@@ -9,7 +9,7 @@ import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
-from analogreadout.parameters import FileParameter, DirectoryParameter, TextEditParameter
+from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from pymeasure.experiment import (FloatParameter, IntegerParameter, BooleanParameter,
                                   ListParameter, Parameter)
 from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput,

@@ -3,7 +3,7 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from analogreadout.procedures import SweepBaseProcedure
+from mkidplotter import SweepBaseProcedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
                                   Parameter, Results)
 
