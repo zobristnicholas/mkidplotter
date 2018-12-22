@@ -12,10 +12,10 @@ log.addHandler(logging.NullHandler())
 
 
 class Sweep(SweepBaseProcedure):
-    frequency1 = FloatParameter("Channel 1 Center Frequency", units="GHz", default=4.0)
-    span1 = FloatParameter("Channel 1 Span", units="MHz", default=2)
-    frequency2 = FloatParameter("Channel 2 Center Frequency", units="GHz", default=4.0)
-    span2 = FloatParameter("Channel 2 Span", units="MHz", default=2)
+    frequency1 = FloatParameter("Ch 1 Frequency", units="GHz", default=4.0)
+    span1 = FloatParameter("Ch 1 Span", units="MHz", default=2)
+    frequency2 = FloatParameter("Ch 2 Frequency", units="GHz", default=4.0)
+    span2 = FloatParameter("Ch 2 Span", units="MHz", default=2)
     take_noise = BooleanParameter("Take Noise Data", default=True)
     n_points = IntegerParameter("Number of Points", default=500)
 

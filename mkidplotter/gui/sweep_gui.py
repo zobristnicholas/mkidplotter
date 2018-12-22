@@ -39,11 +39,6 @@ class SweepGUI(ManagedWindow):
         self.x_labels = x_labels
         self.y_labels = y_labels
         self.legend_text = legend_text
-        # initialize browser actions so they can be saved for testing
-        self.action_open = None
-        self.action_remove = None
-        self.action_use = None
-        self.action_change_color = None
         # matplotlib 2.2.3 default colors
         self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44),
                                          (214, 39, 40), (148, 103, 189), (140, 86, 75),
@@ -135,6 +130,19 @@ class SweepGUI(ManagedWindow):
         self.manager.finished.connect(self.finished)
         self.manager.log.connect(self.log.handle)
 
+        load_configuration = QtGui.QAction("Load configuration", self)
+        load_configuration.triggered.connect(self.load_config)
+
+        save_as_default = QtGui.QAction("Save setup as default", self)
+        save_as_default.triggered.connect(self.save_as_default)
+
+        self.statusBar()
+
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu('File')
+        file_menu.addAction(load_configuration)
+        file_menu.addAction(save_as_default)
+
     def _layout(self):
         self.main = QtGui.QWidget(self)
 
@@ -200,6 +208,17 @@ class SweepGUI(ManagedWindow):
         self.setCentralWidget(self.main)
         self.main.show()
         self.resize(1200, 800)
+
+    @staticmethod
+    def save_config(save_name, files, sweep_dict, parameter_dict):
+        np.savez(save_name, files=files, sweep_dict=sweep_dict,
+                 parameter_dict=parameter_dict)
+
+    def load_config(self):
+        pass
+
+    def save_as_default(self):
+        pass
 
     def setup_plot(self, plots):
         pass
@@ -274,8 +293,13 @@ class SweepGUI(ManagedWindow):
         sweep_grid[0], sweep_grid[1] = sweep_grid[1], sweep_grid[0]
         # transpose to enumerate backwards through the list
         sweep_grid = [grid.T for grid in sweep_grid]
-        start_time = datetime.now()
+        start_time = datetime.now().strftime("%y%m%d_%H%M%S")
         files = []
+        previous_files = []
+        for experiment in self.manager.experiments.queue:
+            file_path = os.path.join(experiment.procedure.directory,
+                                     experiment.browser_item.text(1))
+            previous_files.append(file_path)
         # make the procedure
         procedure = self.make_procedure()
         parameter_values = procedure.parameter_values()
@@ -303,6 +327,7 @@ class SweepGUI(ManagedWindow):
             log.error("Invalid frequency and span lists")
             return
         # loop over sweep parameters
+        parameter_dict = {}
         for index, _ in np.ndenumerate(sweep_grid[0]):
             # set sweep parameters
             for item, (parameter, _, _, _, _) in enumerate(self.sweep_inputs):
@@ -332,14 +357,23 @@ class SweepGUI(ManagedWindow):
                     file_name = procedure.file_name(numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
                     file_path = os.path.join(results.procedure.directory, file_name)
-                    if file_path in files:
+                    if file_path in files or file_path in previous_files:
                         message = "'{}' is already in the queue, skipping"
                         log.error(message.format(file_path))
+                    elif os.path.isfile(file_path):
+                        message = "'{}' already exists, skipping"
+                        log.error(message.format(file_path))
                     else:
-                        files.append(os.path.join(results.procedure.directory, file_name))
+                        file_name = os.path.join(procedure.directory, file_name)
+                        files.append(file_name)
                         self.manager.queue(experiment)
+                        parameter_dict[file_name] = copy.deepcopy(parameter_values)
                 except Exception:
                     log.error('Failed to queue experiment', exc_info=True)
+        self.update_browser_column_width()
+        save_name = os.path.join(procedure.directory,
+                                 "config_sweep_" + start_time + ".npz")
+        self.save_config(save_name, files, sweep_dict, parameter_dict)
 
     def resume(self):
         if self.manager.experiments.has_next():
@@ -404,36 +438,36 @@ class SweepGUI(ManagedWindow):
     def browser_item_menu(self, position):
         item = self.browser.itemAt(position)
         if item is not None:
-            menu = self.define_browser_menu(item)
-            menu.exec_(self.browser.viewport().mapToGlobal(position))
+            menu_dict = self.define_browser_menu(item)
+            menu_dict["menu"].exec_(self.browser.viewport().mapToGlobal(position))
 
     def define_browser_menu(self, item):
         experiment = self.manager.experiments.with_browser_item(item)
         menu = QtGui.QMenu(self)
 
         # Open
-        self.action_open = QtGui.QAction(menu)
-        self.action_open.setText("Open Data Externally")
-        self.action_open.triggered.connect(
+        action_open = QtGui.QAction(menu)
+        action_open.setText("Open Data Externally")
+        action_open.triggered.connect(
             lambda: self.open_file_externally(experiment.results.data_filename))
-        menu.addAction(self.action_open)
+        menu.addAction(action_open)
 
         # Change Color
-        self.action_change_color = QtGui.QAction(menu)
-        self.action_change_color.setText("Change Color")
-        self.action_change_color.triggered.connect(
+        action_change_color = QtGui.QAction(menu)
+        action_change_color.setText("Change Color")
+        action_change_color.triggered.connect(
             lambda: self.change_color(experiment))
-        menu.addAction(self.action_change_color)
+        menu.addAction(action_change_color)
 
         # Remove
-        self.action_remove = QtGui.QAction(menu)
-        self.action_remove.setText("Remove Graph")
+        action_remove = QtGui.QAction(menu)
+        action_remove.setText("Remove Graph")
         if self.manager.is_running():
             if self.manager.running_experiment() == experiment:  # Experiment running
                 self.action_remove.setEnabled(False)
-        self.action_remove.triggered.connect(
+        action_remove.triggered.connect(
             lambda: self.remove_experiment(experiment))
-        menu.addAction(self.action_remove)
+        menu.addAction(action_remove)
 
         # Use parameters
         def set_parameters(chosen_experiment):
@@ -448,11 +482,13 @@ class SweepGUI(ManagedWindow):
                 sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
             self.inputs.set_parameters(parameters)
             self.base_inputs_widget.set_parameters(sweep_parameters)
-        self.action_use = QtGui.QAction(menu)
-        self.action_use.setText("Use These Parameters")
-        self.action_use.triggered.connect(lambda: set_parameters(experiment))
-        menu.addAction(self.action_use)
-        return menu
+        action_use = QtGui.QAction(menu)
+        action_use.setText("Use These Parameters")
+        action_use.triggered.connect(lambda: set_parameters(experiment))
+        menu.addAction(action_use)
+        menu_dict = {"menu": menu, "open": action_open, "color": action_change_color,
+                     "remove": action_remove, "use": action_use}
+        return menu_dict
 
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
@@ -489,3 +525,8 @@ class SweepGUI(ManagedWindow):
                 experiment.browser_item.progressbar.setValue(100.)
                 self.manager.load(experiment)
                 log.info('Opened data file %s' % file_name)
+        self.update_browser_column_width()
+
+    def update_browser_column_width(self):
+        for index in range(self.browser.columnCount()):
+            self.browser.resizeColumnToContents(index)

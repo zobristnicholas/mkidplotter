@@ -1,4 +1,6 @@
 import logging
+import numpy as np
+from datetime import datetime
 from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter)
 
@@ -68,18 +70,6 @@ class SweepGUIProcedure2(Procedure):
     stop_temp = FloatParameter("Stop", units="mK", default=100)
     n_temp = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
 
-import logging
-import numpy as np
-from datetime import datetime
-from pymeasure.experiment import Procedure
-from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter)
-
-from mkidplotter.gui.parameters import DirectoryParameter
-
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
-
 
 class MKIDProcedure(Procedure):
     def __init__(self, *args, **kwargs):
@@ -97,11 +87,11 @@ class MKIDProcedure(Procedure):
         base = "sweep_"
         for number in numbers:
             base += "{:d}_".format(number)
-        base += "%y%m%d_%H%M%S.npz"
         if time is None:
+            base += "%y%m%d_%H%M%S.npz"
             base = datetime.now().strftime(base)
         else:
-            base = time.strftime(base)
+            base += time + ".npz"
         self._file_name = base
         return self._file_name
 

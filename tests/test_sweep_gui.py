@@ -102,8 +102,8 @@ def test_load_and_run(sweep_gui, qtbot, request):
     # find the corresponding browser item and use those parameters in the gui
     item = sweep_gui.browser.topLevelItem(0)
     assert item is not None, "browser item was not loaded"
-    sweep_gui.define_browser_menu(item)
-    sweep_gui.action_use.trigger()
+    menu_dict = sweep_gui.define_browser_menu(item)
+    menu_dict["use"].trigger()
     # check that the parameters that we loaded are the same as those that we saved
     loaded_parameters = sweep_gui.make_procedure().parameter_values()
     loaded_sweep = sweep_gui.base_inputs_widget.get_procedure().parameter_values()
