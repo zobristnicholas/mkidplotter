@@ -1,4 +1,6 @@
 import logging
+import numpy as np
+from datetime import datetime
 from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter)
 
@@ -68,18 +70,6 @@ class SweepGUIProcedure2(Procedure):
     stop_temp = FloatParameter("Stop", units="mK", default=100)
     n_temp = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
 
-import logging
-import numpy as np
-from datetime import datetime
-from pymeasure.experiment import Procedure
-from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter)
-
-from mkidplotter.gui.parameters import DirectoryParameter
-
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
-
 
 class MKIDProcedure(Procedure):
     def __init__(self, *args, **kwargs):
@@ -87,7 +77,7 @@ class MKIDProcedure(Procedure):
         self._file_name = None
         super().__init__(*args, **kwargs)
 
-    def file_name(self, numbers=(0,), time=None):
+    def file_name(self, numbers=(), time=None):
         """Returns a unique name for saving the file"""
         if self._file_name is not None:
             return self._file_name
@@ -95,8 +85,9 @@ class MKIDProcedure(Procedure):
         if not isinstance(numbers, (list, tuple)):
             numbers = [numbers]
         base = "sweep_"
-        for number in numbers:
-            base += "{:d}_".format(number)
+        if numbers:
+            for number in numbers:
+                base += "{:d}_".format(number)
         base += "%y%m%d_%H%M%S.npz"
         if time is None:
             base = datetime.now().strftime(base)
@@ -105,27 +96,36 @@ class MKIDProcedure(Procedure):
         self._file_name = base
         return self._file_name
 
-    def emit_results(self, dictionary):
-        """Wrapper for the emit function so that not all of the dictionary keys need to
-        be defined in order to emit the data. Replaces empty fields with np.nan"""
-        # collect the data into a numpy structured array
-        size = max([value.size if hasattr(value, "shape") and value.shape
-                    else np.array([value]).size for value in dictionary.values()])
-        records = np.empty((size,), dtype=[(key, float) for key in self.DATA_COLUMNS])
-        records.fill(np.nan)
-        for key, value in dictionary.items():
+    def emit(self, topic, record):
+        """Overloaded the emit function so that not all of the parameters need to
+        be defined in order to emit the data. Replaces empty fields with np.nan. This
+        function will not error if no gui is attached to the procedure."""
+        if topic == "results":
+            # collect the data into a numpy structured array
+            size = max([value.size if hasattr(value, "shape") and value.shape
+                        else np.array([value]).size for value in record.values()])
+            records = np.empty((size,), dtype=[(key, float) for key in self.DATA_COLUMNS])
+            records.fill(np.nan)
+            for key, value in record.items():
+                try:
+                    records[key][:value.size] = value
+                except AttributeError:
+                    records[key][:np.array(value).size] = value
+    
+            for key in self.DATA_COLUMNS:
+                if key not in record.keys():
+                    records[key] = np.nan
+    
+            for index in range(size):
+                try:
+                    super().emit(topic, records[index])
+                except NotImplementedError:
+                    pass
+        else:
             try:
-                records[key][:value.size] = value
-            except AttributeError:
-                records[key][:np.array(value).size] = value
-
-        for key in self.DATA_COLUMNS:
-            if key not in dictionary.keys():
-                records[key] = np.nan
-
-        for index in range(size):
-            self.emit('results', records[index])
-
+                super().emit(topic, record)
+            except NotImplementedError:
+                pass
     def _parameter_names(self):
         """Provides an ordered list of parameter names before base class init"""
         parameters = []

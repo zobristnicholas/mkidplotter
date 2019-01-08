@@ -43,7 +43,7 @@ class Sweep(SweepBaseProcedure):
                     "Q1": loop_y[i],
                     "I2": loop_x[i] * 2,
                     "Q2": loop_y[i]}
-            self.emit_results(data)
+            self.emit("results", data)
             log.debug("Emitting results: %s" % data)
             sleep(self.wait_time)
             if self.should_stop():
@@ -55,8 +55,8 @@ class Sweep(SweepBaseProcedure):
             bias_i1, bias_q1 = 70 / self.attenuation, 0
             bias_i2, bias_q2 = 0, 70 / self.attenuation
 
-            self.emit_results({"bias I1": bias_i1, "bias Q1": bias_q1})
-            self.emit_results({"bias I2": bias_i2, "bias Q2": bias_q2})
+            self.emit("results", {"bias I1": bias_i1, "bias Q1": bias_q1})
+            self.emit("results", {"bias I2": bias_i2, "bias Q2": bias_q2})
             # take noise data
             frequency = np.linspace(1e3, 1e5, 100)
             phase = 1 / frequency
@@ -66,7 +66,7 @@ class Sweep(SweepBaseProcedure):
                     "Amplitude PSD1": amplitude,
                     "Phase PSD2": phase / 2,
                     "Amplitude PSD2": amplitude * 2}
-            self.emit_results(data)
+            self.emit("results", data)
         else:
             frequency = np.nan
             phase = np.nan
