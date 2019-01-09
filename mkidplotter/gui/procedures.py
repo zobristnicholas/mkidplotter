@@ -72,9 +72,12 @@ class SweepGUIProcedure2(Procedure):
 
 
 class MKIDProcedure(Procedure):
+    # optional daq from analogreadout connect to the class with connect_daq()
+    daq = None
     def __init__(self, *args, **kwargs):
         self._parameter_names()
         self._file_name = None
+        self.metadata = {"parameters": {}}
         super().__init__(*args, **kwargs)
 
     def file_name(self, numbers=(), time=None):
@@ -127,7 +130,7 @@ class MKIDProcedure(Procedure):
             except NotImplementedError:
                 pass
     def _parameter_names(self):
-        """Provides an ordered list of parameter names before base class init"""
+        """Provides an ordered list of parameter names before base class init."""
         parameters = []
         for item in dir(self):
             if item != "file_name":
@@ -135,6 +138,25 @@ class MKIDProcedure(Procedure):
                 if isinstance(attribute, Parameter):
                     parameters.append(item)
         self.parameter_names = parameters
+        
+    def update_metadata(self):
+        """Saves information about the process to the metadata dictionary."""
+        # save current parameters
+        for name in dir(self):
+            if name in self._parameters.keys():
+                value = getattr(self, name)
+                log.info("Parameter {}: {}".format(name, value))
+                self.metadata['parameters'][name] = value
+        # save some data from the current state of the daq sensors
+        if callable(getattr(self.daq, "system_state", None)):
+            self.metadata.update(self.daq.system_state())
+        # save the file name
+        self.metadata["file_name"] = self.file_name()
+        
+    @classmethod
+    def connect_daq(cls, daq):
+        """Connects all current and future instances of the procedure class to the daq"""
+        cls.daq = daq
 
 
 class SweepBaseProcedure(MKIDProcedure):

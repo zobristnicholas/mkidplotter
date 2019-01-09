@@ -4,7 +4,7 @@ import numpy as np
 from mkidplotter.gui.sweep_gui import SweepGUI
 from mkidplotter.gui.widgets import SweepPlotWidget, NoisePlotWidget
 from mkidplotter.gui.procedures import (SweepGUIProcedure, SweepGUIProcedure2,
-                                        SweepBaseProcedure)
+                                        SweepBaseProcedure, MKIDProcedure)
 from mkidplotter.icons.manage_icons import get_image_icon
 # catch known harmless warnings
 warning = "using a non-integer number instead of an integer will result in an error " + \
