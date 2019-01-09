@@ -80,14 +80,17 @@ class MKIDProcedure(Procedure):
         self.metadata = {"parameters": {}}
         super().__init__(*args, **kwargs)
 
-    def file_name(self, numbers=(), time=None):
+    def file_name(self, prefix="", numbers=(), time=None):
         """Returns a unique name for saving the file"""
         if self._file_name is not None:
             return self._file_name
 
         if not isinstance(numbers, (list, tuple)):
             numbers = [numbers]
-        base = "sweep_"
+        if prefix:
+            base = prefix + "_"
+        else:
+            base = ""
         if numbers:
             for number in numbers:
                 base += "{:d}_".format(number)

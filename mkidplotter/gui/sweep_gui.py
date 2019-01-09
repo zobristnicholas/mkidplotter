@@ -329,7 +329,7 @@ class SweepGUI(ManagedWindow):
                     experiment = self.new_experiment(results)
                     # change the file name to the real file name if it has one
                     numbers = [f_index] + [i for i in index]
-                    file_name = procedure.file_name(numbers, start_time)
+                    file_name = procedure.file_name("sweep", numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
                     file_path = os.path.join(results.procedure.directory, file_name)
                     if file_path in files:
