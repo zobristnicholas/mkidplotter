@@ -94,11 +94,14 @@ class MKIDProcedure(Procedure):
         if numbers:
             for number in numbers:
                 base += "{:d}_".format(number)
-        base += "%y%m%d_%H%M%S.npz"
         if time is None:
-            base = datetime.now().strftime(base)
-        else:
+            time = datetime.now()
+        if isinstance(time, datetime):
+            base += "%y%m%d_%H%M%S"
             base = time.strftime(base)
+        else:
+            base += time
+        base += ".npz"
         self._file_name = base
         return self._file_name
 
