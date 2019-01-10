@@ -50,7 +50,7 @@ class SweepGUIProcedure2(Procedure):
                     ["field", "start_field", "stop_field", "n_field"],
                     ["temperature", "start_temp", "stop_temp", "n_temp"]]}
 
-    directory = DirectoryParameter("Data Directory", default="/Users/nicholaszobrist/Desktop/test")
+    directory = DirectoryParameter("Data Directory", default="")
 
     frequencies1 = TextEditParameter("F1 List [GHz]", default=[4.0, 5.0])
     spans1 = TextEditParameter("Span1 List [MHz]", default=[2.0])
@@ -105,10 +105,16 @@ class MKIDProcedure(Procedure):
         self._file_name = base
         return self._file_name
 
-    def emit(self, topic, record):
-        """Overloaded the emit function so that not all of the parameters need to
-        be defined in order to emit the data. Replaces empty fields with np.nan. This
-        function will not error if no gui is attached to the procedure."""
+    def send(self, topic, record):
+        """Sends data to the Gui. It is a layer of logic over the built in emit() so that
+        not all of the parameters need to be defined in order to emit the data. Replaces
+        empty fields with np.nan. This function will not error if no gui is attached to
+        the procedure.
+        
+        emit() was not simply overloaded since it is monkey patched by the pymeasure
+        worker class.
+        
+        """
         if topic == "results":
             # collect the data into a numpy structured array
             size = max([value.size if hasattr(value, "shape") and value.shape
@@ -124,15 +130,14 @@ class MKIDProcedure(Procedure):
             for key in self.DATA_COLUMNS:
                 if key not in record.keys():
                     records[key] = np.nan
-    
             for index in range(size):
                 try:
-                    super().emit(topic, records[index])
+                    self.emit(topic, records[index])
                 except NotImplementedError:
                     pass
         else:
             try:
-                super().emit(topic, record)
+                self.emit(topic, record)
             except NotImplementedError:
                 pass
     def _parameter_names(self):

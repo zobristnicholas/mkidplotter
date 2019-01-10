@@ -324,7 +324,7 @@ class SweepGUI(ManagedWindow):
                 procedure.set_parameters(parameter_values)
                 # set up the experiment
                 try:
-                    file_path = tempfile.mktemp()
+                    file_path = tempfile.mktemp(suffix=".txt")
                     results = Results(procedure, file_path)
                     experiment = self.new_experiment(results)
                     # change the file name to the real file name if it has one
