@@ -46,9 +46,9 @@ class Sweep(SweepBaseProcedure):
             self.send("results", data)
             log.debug("Emitting results: %s" % data)
             sleep(self.wait_time)
-            if self.should_stop():
+            if self.stop():
                 log.warning("Caught the stop flag in the procedure")
-                break
+                return
 
         if self.take_noise:
             # calculate bias point

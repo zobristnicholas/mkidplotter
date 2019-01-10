@@ -50,7 +50,8 @@ class SweepGUIProcedure2(Procedure):
                     ["field", "start_field", "stop_field", "n_field"],
                     ["temperature", "start_temp", "stop_temp", "n_temp"]]}
 
-    directory = DirectoryParameter("Data Directory", default="")
+    directory = DirectoryParameter("Data Directory",
+                                   default=r"C:\Documents and Settings\kids\nzobrist")
 
     frequencies1 = TextEditParameter("F1 List [GHz]", default=[4.0, 5.0])
     spans1 = TextEditParameter("Span1 List [MHz]", default=[2.0])
@@ -106,14 +107,14 @@ class MKIDProcedure(Procedure):
         return self._file_name
 
     def send(self, topic, record):
-        """Sends data to the Gui. It is a layer of logic over the built in emit() so that
-        not all of the parameters need to be defined in order to emit the data. Replaces
-        empty fields with np.nan. This function will not error if no gui is attached to
-        the procedure.
+        """
+        Sends data to the Gui. It is a layer of logic over the built in emit() so that not
+        all of the parameters need to be defined in order to emit the data. Replaces empty
+        fields with np.nan. This function will not error if no gui is attached to the
+        procedure.
         
         emit() was not simply overloaded since it is monkey patched by the pymeasure
         worker class.
-        
         """
         if topic == "results":
             # collect the data into a numpy structured array
@@ -140,6 +141,21 @@ class MKIDProcedure(Procedure):
                 self.emit(topic, record)
             except NotImplementedError:
                 pass
+            
+    def stop(self):
+        """
+        Checks if the procedure should stop. It is a layer of logic over the built in
+        should_stop() so that the function will not error if no gui is attached to the
+        procedure.
+        
+        should_stop() was not simply overloaded since it is monkey patched by the
+        pymeasure worker class.
+        """
+        try:
+            return self.should_stop()
+        except NotImplementedError:
+            return False
+        
     def _parameter_names(self):
         """Provides an ordered list of parameter names before base class init."""
         parameters = []

@@ -1,8 +1,7 @@
 import os
 import logging
-import numpy as np
-from pymeasure.display.Qt import QtCore, QtGui, qt_min_version
 from pymeasure.display.inputs import Input
+from pymeasure.display.Qt import QtCore, QtGui, qt_min_version
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -41,6 +40,7 @@ class FileInput(QtGui.QWidget, Input):
 
     def get_file(self):
         file_name = QtGui.QFileDialog.getOpenFileName(parent=self)
+        file_name = os.path.abspath(file_name)  # format seperators
         self.setValue(file_name)
 
 
@@ -50,6 +50,7 @@ class DirectoryInput(FileInput):
     """
     def get_file(self):
         file_name = QtGui.QFileDialog.getExistingDirectory(parent=self)
+        file_name = os.path.abspath(file_name)  # format seperators
         self.setValue(file_name)
 
 
