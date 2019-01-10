@@ -75,7 +75,7 @@ class SweepGUI(ManagedWindow):
         super().__init__(procedure_class=procedure_class, inputs=inputs,
                          displays=base_inputs + inputs,
                          x_axis=x_axes[0][0], y_axis=y_axes[0][0])
-        self.setWindowTitle('Test Sweep GUI')
+        self.setWindowTitle('Sweep GUI')
         self._abort_all = False
         self._abort_state = "abort"
         self.setWindowIcon(get_image_icon("loop.png"))
