@@ -219,6 +219,12 @@ class SweepPlotWidget(MKIDPlotWidget):
         return curve
 
 
+class TransmissionPlotWidget(SweepPlotWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.plot.setAspectLocked(False)
+
+
 class NoisePlotWidget(MKIDPlotWidget):
     """Plot widget for noise"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
