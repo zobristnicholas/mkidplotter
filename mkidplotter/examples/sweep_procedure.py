@@ -3,9 +3,10 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
+from mkidplotter import NoiseInput
 from mkidplotter import SweepBaseProcedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter, Results)
+                                  VectorParameter, Results)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -16,7 +17,7 @@ class Sweep(SweepBaseProcedure):
     span1 = FloatParameter("Channel 1 Span", units="MHz", default=2)
     frequency2 = FloatParameter("Channel 2 Center Frequency", units="GHz", default=4.0)
     span2 = FloatParameter("Channel 2 Span", units="MHz", default=2)
-    take_noise = BooleanParameter("Take Noise Data", default=True)
+    noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10], ui_class=NoiseInput)
     n_points = IntegerParameter("Number of Points", default=500)
 
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
@@ -50,7 +51,7 @@ class Sweep(SweepBaseProcedure):
                 log.warning("Caught the stop flag in the procedure")
                 return
 
-        if self.take_noise:
+        if self.noise[0]:
             # calculate bias point
             bias_i1, bias_q1 = 70 / self.attenuation, 0
             bias_i2, bias_q2 = 0, 70 / self.attenuation

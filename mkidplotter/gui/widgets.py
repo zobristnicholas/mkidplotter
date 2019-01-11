@@ -9,14 +9,16 @@ import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
-from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
+from mkidplotter.gui.parameters import (FileParameter, DirectoryParameter,
+                                        TextEditParameter)
 from pymeasure.experiment import (FloatParameter, IntegerParameter, BooleanParameter,
                                   ListParameter, Parameter)
 from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput,
                                       ListInput, StringInput)
 
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
-from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput
+from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput,
+                                    NoiseInput)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -272,7 +274,9 @@ class NoisePlotWidget(MKIDPlotWidget):
 
 
 class InputsWidget(widgets.InputsWidget):
-    """Fixes set_parameters bug in pymeasure (would always set to default if existed)"""
+    """
+    Fixes set_parameters bug in pymeasure (would always set to default if existed).
+    Puts NoiseWidget last in layout column."""
     def set_parameters(self, parameter_objects):
         for name in self._inputs:
             parameter = parameter_objects[name]
@@ -280,6 +284,31 @@ class InputsWidget(widgets.InputsWidget):
             element.setValue(parameter.value)
             if hasattr(parameter, 'units') and parameter.units:
                 element.setSuffix(" %s" % parameter.units)
+    
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+
+        parameters = self._procedure.parameter_objects()
+        add_last = []
+        for name in self._inputs:
+            widget = getattr(self, name)
+            if isinstance(widget, NoiseInput):
+                add_last.append(name)
+                continue
+            if not isinstance(widget, self.NO_LABEL_INPUTS):
+                label = QtGui.QLabel(self)
+                label.setText("%s:" % parameters[name].name)
+                vbox.addWidget(label)
+            vbox.addWidget(widget)
+        for name in add_last:
+            widget = getattr(self, name)
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % parameters[name].name)
+            vbox.addWidget(label)
+            vbox.addWidget(widget)
+        self.setLayout(vbox)                
+                
 
 
 class MKIDInputsWidget(InputsWidget):

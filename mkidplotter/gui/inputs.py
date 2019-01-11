@@ -2,7 +2,9 @@ import os
 import logging
 from pymeasure.display.inputs import Input
 from pymeasure.display.Qt import QtCore, QtGui, qt_min_version
-
+from pymeasure.experiment import IntegerParameter, FloatParameter, BooleanParameter
+from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput)
+                                      
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
@@ -83,3 +85,93 @@ class FloatTextEditInput(QtGui.QTextEdit, Input):
 
     def sizeHint(self):
         return QtCore.QSize(0, 120)
+        
+
+class NoiseInput(QtGui.QFrame, Input):
+    def __init__(self, parameter, parent=None, **kwargs):
+        self._setup_ui()
+        if qt_min_version(5):
+            super().__init__(parameter=parameter, parent=parent, **kwargs)
+        else:
+            QtGui.QWidget.__init__(self, parent=parent, **kwargs)
+            Input.__init__(self, parameter)
+        self._layout()
+        
+    def _setup_ui(self):
+        self.take_noise = BooleanInput(BooleanParameter("Take Data"))
+        self.take_noise.stateChanged.connect(self.noise_state)
+        self.integration = ScientificInput(FloatParameter("Integration Time", units="s"))
+        self.n_int = IntegerInput(IntegerParameter("# of Integrations"))
+        self.off_resonance = BooleanInput(BooleanParameter("Take Off Resonance Data"))
+        self.off_resonance.stateChanged.connect(self.off_resonance_state)
+        self.offset = ScientificInput(FloatParameter("Frequency Offset", units="MHz"))
+        self.n_off = IntegerInput(IntegerParameter("# of Points"))
+    
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+        
+        vbox.addWidget(self.take_noise)
+        label = QtGui.QLabel(self)
+        label.setText("%s:" % self.integration.parameter.name)
+        vbox.addWidget(label)
+        vbox.addWidget(self.integration)
+        label = QtGui.QLabel(self)
+        label.setText("%s:" % self.n_int.parameter.name)
+        vbox.addWidget(label)
+        vbox.addWidget(self.n_int)
+        
+        vbox.addWidget(self.off_resonance)
+        label = QtGui.QLabel(self)
+        label.setText("%s:" % self.offset.parameter.name)
+        vbox.addWidget(label)
+        vbox.addWidget(self.offset)
+        label = QtGui.QLabel(self)
+        label.setText("%s:" % self.n_off.parameter.name)
+        vbox.addWidget(label)
+        vbox.addWidget(self.n_off)
+        
+        self.setLayout(vbox)
+        self.setFrameShape(QtGui.QFrame.Panel)
+        self.setFrameShadow(QtGui.QFrame.Raised)
+        self.setLineWidth(3)
+
+    def setValue(self, value):
+        self.take_noise.setValue(bool(value[0]))
+        self.integration.setValue(value[1])
+        self.n_int.setValue(value[2])
+        self.off_resonance.setValue(bool(value[3]))
+        self.offset.setValue(value[4])
+        self.n_off.setValue(value[5])
+
+    def setSuffix(self, value):
+        pass
+
+    def value(self):
+        value = [float(self.take_noise.value()), self.integration.value(),
+                 self.n_int.value(), float(self.off_resonance.value()),
+                 self.offset.value(), self.n_off.value()]
+        return value
+        
+    def noise_state(self):
+        if self.take_noise.value():
+            self.integration.setEnabled(True)
+            self.n_int.setEnabled(True)
+            self.off_resonance.setEnabled(True)
+            if self.off_resonance.value():
+                self.offset.setEnabled(True)
+                self.n_off.setEnabled(True)
+        else:
+            self.integration.setDisabled(True)
+            self.n_int.setDisabled(True)
+            self.off_resonance.setDisabled(True)
+            self.offset.setDisabled(True)
+            self.n_off.setDisabled(True)
+            
+    def off_resonance_state(self):
+        if self.off_resonance.value() and self.take_noise.value():
+            self.offset.setEnabled(True)
+            self.n_off.setEnabled(True)
+        else:
+            self.offset.setDisabled(True)
+            self.n_off.setDisabled(True)

@@ -26,7 +26,7 @@ class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
-                 plot_names=("Sweep Plot",)):
+                 plot_names=("Sweep Plot",), **kwargs):
         self.base_procedure_class = base_procedure_class
         self.ordering = copy.deepcopy(self.base_procedure_class().ordering)
         self.sweep_inputs = self.ordering["sweep_inputs"]
@@ -74,7 +74,7 @@ class SweepGUI(ManagedWindow):
                 inputs.append(parameter)
         super().__init__(procedure_class=procedure_class, inputs=inputs,
                          displays=base_inputs + inputs,
-                         x_axis=x_axes[0][0], y_axis=y_axes[0][0])
+                         x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
         self.setWindowTitle('Sweep GUI')
         self._abort_all = False
         self._abort_state = "abort"
@@ -199,7 +199,7 @@ class SweepGUI(ManagedWindow):
         self.main.setLayout(vbox)
         self.setCentralWidget(self.main)
         self.main.show()
-        self.resize(1200, 800)
+        self.resize(1300, 800)
 
     def setup_plot(self, plots):
         pass
