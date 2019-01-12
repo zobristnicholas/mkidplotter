@@ -133,6 +133,7 @@ class MKIDProcedure(Procedure):
                     records[key] = np.nan
             for index in range(size):
                 try:
+                    # log.warning("sending {}".format(records[index]))
                     self.emit(topic, records[index])
                 except NotImplementedError:
                     pass

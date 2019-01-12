@@ -76,7 +76,7 @@ class MKIDResultsDialog(widgets.ResultsDialog):
         self.layout().addWidget(preview_tab, 0, 3, 4, 1)
         self.layout().setColumnStretch(3, 2)
         self.setMinimumSize(900, 500)
-        self.resize(1200, 500)
+        self.resize(1300, 500)
 
         self.setFileMode(QtGui.QFileDialog.ExistingFiles)
         self.currentChanged.connect(self.update_plot)
@@ -237,11 +237,11 @@ class NoisePlotWidget(MKIDPlotWidget):
         self.y_label = y_label
         self.legend_text = legend_text
         self._point_size = 6
-        self.line_style = {"pen": [pg.mkPen(color='w', width=4, style=QtCore.Qt.DashLine),
-                                   pg.mkPen(color='w', width=4, style=QtCore.Qt.DotLine),
-                                   pg.mkPen(color='w', width=4,
+        self.line_style = {"pen": [pg.mkPen(color='w', width=2, style=QtCore.Qt.DashLine),
+                                   pg.mkPen(color='w', width=2, style=QtCore.Qt.DotLine),
+                                   pg.mkPen(color='w', width=2,
                                             style=QtCore.Qt.DashDotLine),
-                                   pg.mkPen(color='w', width=4,
+                                   pg.mkPen(color='w', width=2,
                                             style=QtCore.Qt.DashDotDotLine)],
                            "shadowPen": [pg.mkPen(color='k', width=4),
                                          pg.mkPen(color='k', width=4),
