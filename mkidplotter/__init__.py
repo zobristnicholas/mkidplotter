@@ -1,6 +1,7 @@
 # get rid of numpy deprecation warnings
 import warnings
 import numpy as np
+from mkidplotter.gui.results import Results
 from mkidplotter.gui.inputs import NoiseInput
 from mkidplotter.gui.sweep_gui import SweepGUI
 from mkidplotter.gui.widgets import (SweepPlotWidget, TransmissionPlotWidget,

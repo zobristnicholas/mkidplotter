@@ -3,10 +3,8 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from mkidplotter import NoiseInput
-from mkidplotter import SweepBaseProcedure
-from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  VectorParameter, Results)
+from mkidplotter import NoiseInput, SweepBaseProcedure, Results
+from pymeasure.experiment import IntegerParameter, FloatParameter, VectorParameter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -17,7 +15,8 @@ class Sweep(SweepBaseProcedure):
     span1 = FloatParameter("Channel 1 Span", units="MHz", default=2)
     frequency2 = FloatParameter("Channel 2 Center Frequency", units="GHz", default=4.0)
     span2 = FloatParameter("Channel 2 Span", units="MHz", default=2)
-    noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10], ui_class=NoiseInput)
+    noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10],
+                            ui_class=NoiseInput)
     n_points = IntegerParameter("Number of Points", default=500)
 
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',

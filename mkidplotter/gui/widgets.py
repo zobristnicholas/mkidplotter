@@ -264,7 +264,7 @@ class NoisePlotWidget(MKIDPlotWidget):
             if 'color' not in cycled_args.keys():
                 cycled_args.update({'color': pg.intColor(0)})
             if 'pen' not in cycled_args:
-                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=4)
+                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=2)
             if 'antialias' not in cycled_args:
                 cycled_args['antialias'] = False
             curve.append(NoiseResultsCurve(results, x=self.x_axes[index],

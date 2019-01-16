@@ -5,15 +5,15 @@ import tempfile
 import numpy as np
 from cycler import cycler
 from datetime import datetime
-from pymeasure.experiment import Results
 from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
 from pymeasure.display.manager import Experiment
 from pymeasure.display.browser import BrowserItem
 from pymeasure.display.windows import ManagedWindow
 
-from mkidplotter.icons.manage_icons import get_image_icon
+from mkidplotter.gui.results import Results
 from mkidplotter.gui.managers import MKIDManager
+from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.procedures import SweepGUIProcedure
 from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
                                      MKIDBrowserWidget, MKIDResultsDialog)

@@ -31,7 +31,7 @@ class NoiseResultsCurve(MKIDResultsCurve):
         """Updates the data by polling the results"""
         if self.force_reload:
             self.results.reload()
-        data = self.results.data  # get the current snapshot
+        data = self.results.data  # get the current snapshot        
 
         # Set x-y data
         logic = np.logical_not(pd.isnull(data[self.x]))
