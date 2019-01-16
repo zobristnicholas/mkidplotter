@@ -41,9 +41,11 @@ class FileInput(QtGui.QWidget, Input):
         return self.line_edit.text()
 
     def get_file(self):
-        file_name = QtGui.QFileDialog.getOpenFileName(parent=self)
-        file_name = os.path.abspath(file_name)  # format seperators
-        self.setValue(file_name)
+        current = os.path.dirname(self.value())
+        file_name = QtGui.QFileDialog.getOpenFileName(parent=self, directory=current)
+        if file_name:
+            file_name = os.path.abspath(file_name)  # format seperators
+            self.setValue(file_name)
 
 
 class DirectoryInput(FileInput):
@@ -51,10 +53,11 @@ class DirectoryInput(FileInput):
     Directory name input box connected to a :class:`FileParameter`.
     """
     def get_file(self):
-        # TODO: change so that sets to current directory on dialog open
-        file_name = QtGui.QFileDialog.getExistingDirectory(parent=self)
-        file_name = os.path.abspath(file_name)  # format seperators
-        self.setValue(file_name)
+        current = self.value()
+        file_name = QtGui.QFileDialog.getExistingDirectory(parent=self, directory=current)
+        if file_name:
+            file_name = os.path.abspath(file_name)  # format seperators
+            self.setValue(file_name)
 
 
 class FloatTextEditInput(QtGui.QTextEdit, Input):
