@@ -50,8 +50,7 @@ class SweepGUIProcedure2(Procedure):
                     ["field", "start_field", "stop_field", "n_field"],
                     ["temperature", "start_temp", "stop_temp", "n_temp"]]}
 
-    directory = DirectoryParameter("Data Directory",
-                                   default=r"C:\Documents and Settings\kids\nzobrist")
+    directory = DirectoryParameter("Data Directory")
 
     frequencies1 = TextEditParameter("F1 List [GHz]", default=[4.0, 5.0])
     spans1 = TextEditParameter("Span1 List [MHz]", default=[2.0])

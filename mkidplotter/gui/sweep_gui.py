@@ -23,7 +23,6 @@ log.addHandler(logging.NullHandler())
 
 
 # TODO: rename module as windows
-# TODO: fix: start next experment on error
 # TODO: fix: show all and clear all disabled on load data set from file 
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
 # maybe set process data structures to None in the shutdown() method
@@ -139,6 +138,7 @@ class SweepGUI(ManagedWindow):
         self.manager.queued.connect(self.queued)
         self.manager.running.connect(self.running)
         self.manager.finished.connect(self.finished)
+        self.manager.failed.connect(self.failed)
         self.manager.log.connect(self.log.handle)
 
     def _layout(self):
@@ -400,6 +400,19 @@ class SweepGUI(ManagedWindow):
     def abort_all(self):
         self._abort_all = True
         self.abort()
+        
+    def failed(self, experiment):
+        if self.manager.experiments.has_next():
+            self.abort_all_button.setEnabled(False)
+            self.abort_button.setEnabled(True)
+            self.abort_button.setText("Resume")
+            self.abort_button.clicked.disconnect()
+            self.abort_button.clicked.connect(self.resume)
+            self._abort_state = "resume"
+        else:
+            self.abort_button.setEnabled(False)
+            self.abort_all_button.setEnabled(False)
+            self.browser_widget.clear_button.setEnabled(True)
 
     def finished(self, experiment):
         if not self.manager.experiments.has_next():

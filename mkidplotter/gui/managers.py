@@ -1,5 +1,5 @@
 import logging
-from pymeasure.display.manager import Manager, Experiment
+from pymeasure.display.manager import Manager
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
