@@ -22,7 +22,13 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
+# TODO: rename module as windows
+# TODO: fix: start next experment on error
+# TODO: fix: show all and clear all disabled on load data set from file 
+# TODO: fix: add some api for handling memory errors (no clue what this looks like)
+# maybe set process data structures to None in the shutdown() method
 class SweepGUI(ManagedWindow):
+    # TODO: plot snap to data when browser check box checked
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
@@ -229,6 +235,10 @@ class SweepGUI(ManagedWindow):
     def new_experiment(self, results, curve=None):
         if curve is None:
             curve = self.new_curve(results)
+        # TODO: allow sorting on Graph column (order created)
+        # TODO: subclass BrowserItem so that it sorts numbers correctly
+        # https://stackoverflow.com/questions/363200/is-it-possible-to-sort-numbers-in-a-
+        # qtreewidget-column
         browser_item = BrowserItem(results, curve[0][0])
         experiment = Experiment(results, curve, browser_item)
 

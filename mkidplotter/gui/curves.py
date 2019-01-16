@@ -1,10 +1,8 @@
 import logging
-import warnings
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 
-from pymeasure.display.Qt import QtCore
 from pymeasure.display.curves import ResultsCurve
 
 log = logging.getLogger(__name__)

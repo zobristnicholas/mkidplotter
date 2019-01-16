@@ -51,6 +51,7 @@ class DirectoryInput(FileInput):
     Directory name input box connected to a :class:`FileParameter`.
     """
     def get_file(self):
+        # TODO: change so that sets to current directory on dialog open
         file_name = QtGui.QFileDialog.getExistingDirectory(parent=self)
         file_name = os.path.abspath(file_name)  # format seperators
         self.setValue(file_name)
