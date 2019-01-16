@@ -38,10 +38,11 @@ class Results(results.Results):
                 self._data = pd.DataFrame(columns=self.procedure.DATA_COLUMNS)
         else:  # Concatenate additional data, if any, to already loaded data
             skiprows = len(self._data) + self._header_count
+            # 'c' engine broken on windows (line seperator issue). use 'python' instead
             chunks = pd.read_csv(self.data_filename, comment=Results.COMMENT,
                                  header=0, names=self._data.columns,
                                  chunksize=Results.CHUNK_SIZE, skiprows=skiprows,
-                                 iterator=True, lineterminator='\n')
+                                 iterator=True, engine='python')
             try:
                 tmp_frame = pd.concat(chunks, ignore_index=True)
                 # only append new data if there is any
