@@ -23,7 +23,6 @@ log.addHandler(logging.NullHandler())
 
 
 # TODO: rename module as windows
-# TODO: fix: show all and clear all disabled on load data set from file 
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
 # maybe set process data structures to None in the shutdown() method
 class SweepGUI(ManagedWindow):
@@ -341,6 +340,7 @@ class SweepGUI(ManagedWindow):
                     numbers = [f_index] + [i for i in index]
                     file_name = procedure.file_name("sweep", numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
+                    experiment.data_filename = file_name
                     file_path = os.path.join(results.procedure.directory, file_name)
                     if file_path in files:
                         message = "'{}' is already in the queue, skipping"
@@ -508,7 +508,11 @@ class SweepGUI(ManagedWindow):
                 for index, _ in enumerate(self.plot):
                     for _, curve in enumerate(experiment.curve[index]):
                         curve.update()
+                experiment.data_filename = os.path.basename(file_name)
                 experiment.browser_item.setText(1, os.path.basename(file_name))
                 experiment.browser_item.progressbar.setValue(100.)
                 self.manager.load(experiment)
                 log.info('Opened data file %s' % file_name)
+                self.browser_widget.show_button.setEnabled(True)
+                self.browser_widget.hide_button.setEnabled(True)
+                self.browser_widget.clear_button.setEnabled(True)

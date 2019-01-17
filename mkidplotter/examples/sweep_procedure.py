@@ -130,7 +130,7 @@ class Sweep(SweepBaseProcedure):
                 except AttributeError:
                     records[key][:np.array(value).size] = value
         # make a temporary file for the gui data
-        file_path = tempfile.mktemp()
+        file_path = tempfile.mktemp(suffix='.txt')
         results = Results(procedure, file_path)
         log.info("Loading dataset into the temporary file %s", file_path)
         with open(file_path, mode='a') as temporary_file:
