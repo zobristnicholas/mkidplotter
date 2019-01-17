@@ -198,7 +198,6 @@ class SweepPlotWidget(MKIDPlotWidget):
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(True)
-        self.plot.enableAutoRange(True)
 
     def new_curve(self, results, **kwargs):
         curve = []

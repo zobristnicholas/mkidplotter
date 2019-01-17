@@ -26,7 +26,6 @@ log.addHandler(logging.NullHandler())
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
 # maybe set process data structures to None in the shutdown() method
 class SweepGUI(ManagedWindow):
-    # TODO: plot snap to data when browser check box checked
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
@@ -218,13 +217,10 @@ class SweepGUI(ManagedWindow):
                     for curve in experiment.curve[index]:
                         plot.removeItem(curve)
             else:
-                for index, _ in enumerate(self.plot):
-                    for _, curve in enumerate(experiment.curve[index]):
+                for index, plot in enumerate(self.plot):
+                    for curve in experiment.curve[index]:
                         curve.update()
-                        # ignoreBounds helps remove problem with resetting color
-                        # then hiding/showing the plot
-                        # not ideal because it breaks auto-ranging
-                        self.plot[index].addItem(curve, ignoreBounds=True)
+                        plot.addItem(curve)
 
     def new_curve(self, results, **kwargs):
         curve = [plot_widget.new_curve(results, **kwargs)
@@ -252,9 +248,13 @@ class SweepGUI(ManagedWindow):
     def update_color(self, experiment, color):
         pixelmap = QtGui.QPixmap(24, 24)
         pixelmap.fill(color)
-        # setIcon breaks auto-ranging when hiding/showing the plot
-        # see comment in self.browser_item_changed()
+        # disable browser_item_changed() while changing the icon
+        self.browser.itemChanged.disconnect()
         experiment.browser_item.setIcon(0, QtGui.QIcon(pixelmap))
+        self.browser.itemChanged.connect(self.browser_item_changed)
+
+        self.lock_browser_item_changed = False
+
         for index, _ in enumerate(self.plot):
             for _, curve in enumerate(experiment.curve[index]):
                 if curve.pen is not None:
