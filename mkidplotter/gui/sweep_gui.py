@@ -8,13 +8,13 @@ from datetime import datetime
 from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
 from pymeasure.display.manager import Experiment
-from pymeasure.display.browser import BrowserItem
 from pymeasure.display.windows import ManagedWindow
 
 from mkidplotter.gui.results import Results
+from mkidplotter.gui.browser import BrowserItem
 from mkidplotter.gui.managers import MKIDManager
-from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.procedures import SweepGUIProcedure
+from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
                                      MKIDBrowserWidget, MKIDResultsDialog)
 
@@ -230,10 +230,6 @@ class SweepGUI(ManagedWindow):
     def new_experiment(self, results, curve=None):
         if curve is None:
             curve = self.new_curve(results)
-        # TODO: allow sorting on Graph column (order created)
-        # TODO: subclass BrowserItem so that it sorts numbers correctly
-        # https://stackoverflow.com/questions/363200/is-it-possible-to-sort-numbers-in-a-
-        # qtreewidget-column
         browser_item = BrowserItem(results, curve[0][0])
         experiment = Experiment(results, curve, browser_item)
 
@@ -337,7 +333,8 @@ class SweepGUI(ManagedWindow):
                     results = Results(procedure, file_path)
                     experiment = self.new_experiment(results)
                     # change the file name to the real file name if it has one
-                    numbers = [f_index] + [i for i in index]
+                    # temp, field, atten, fr
+                    numbers = [i for i in index] + [f_index]
                     file_name = procedure.file_name("sweep", numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
                     experiment.data_filename = file_name
@@ -476,6 +473,14 @@ class SweepGUI(ManagedWindow):
         self.action_use.triggered.connect(lambda: set_parameters(experiment))
         menu.addAction(self.action_use)
         return menu
+        
+    def clear_experiments(self):
+        reply = QtGui.QMessageBox.question(self, 'Remove Graphs',
+                                           "Are you sure you want to remove all of "
+                                           "the graphs?", QtGui.QMessageBox.Yes |
+                                           QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            self.manager.clear()
 
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
