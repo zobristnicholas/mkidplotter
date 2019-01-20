@@ -9,14 +9,16 @@ import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
-from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
+from mkidplotter.gui.parameters import (FileParameter, DirectoryParameter,
+                                        TextEditParameter)
 from pymeasure.experiment import (FloatParameter, IntegerParameter, BooleanParameter,
                                   ListParameter, Parameter)
 from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput,
                                       ListInput, StringInput)
 
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
-from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput
+from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput,
+                                    NoiseInput)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -74,7 +76,7 @@ class MKIDResultsDialog(widgets.ResultsDialog):
         self.layout().addWidget(preview_tab, 0, 3, 4, 1)
         self.layout().setColumnStretch(3, 2)
         self.setMinimumSize(900, 500)
-        self.resize(1200, 500)
+        self.resize(1300, 500)
 
         self.setFileMode(QtGui.QFileDialog.ExistingFiles)
         self.currentChanged.connect(self.update_plot)
@@ -196,7 +198,6 @@ class SweepPlotWidget(MKIDPlotWidget):
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(True)
-        self.plot.enableAutoRange(True)
 
     def new_curve(self, results, **kwargs):
         curve = []
@@ -219,6 +220,12 @@ class SweepPlotWidget(MKIDPlotWidget):
         return curve
 
 
+class TransmissionPlotWidget(SweepPlotWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.plot.setAspectLocked(False)
+
+
 class NoisePlotWidget(MKIDPlotWidget):
     """Plot widget for noise"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
@@ -229,11 +236,11 @@ class NoisePlotWidget(MKIDPlotWidget):
         self.y_label = y_label
         self.legend_text = legend_text
         self._point_size = 6
-        self.line_style = {"pen": [pg.mkPen(color='w', width=4, style=QtCore.Qt.DashLine),
-                                   pg.mkPen(color='w', width=4, style=QtCore.Qt.DotLine),
-                                   pg.mkPen(color='w', width=4,
+        self.line_style = {"pen": [pg.mkPen(color='w', width=2, style=QtCore.Qt.DashLine),
+                                   pg.mkPen(color='w', width=2, style=QtCore.Qt.DotLine),
+                                   pg.mkPen(color='w', width=2,
                                             style=QtCore.Qt.DashDotLine),
-                                   pg.mkPen(color='w', width=4,
+                                   pg.mkPen(color='w', width=2,
                                             style=QtCore.Qt.DashDotDotLine)],
                            "shadowPen": [pg.mkPen(color='k', width=4),
                                          pg.mkPen(color='k', width=4),
@@ -256,7 +263,7 @@ class NoisePlotWidget(MKIDPlotWidget):
             if 'color' not in cycled_args.keys():
                 cycled_args.update({'color': pg.intColor(0)})
             if 'pen' not in cycled_args:
-                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=4)
+                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=2)
             if 'antialias' not in cycled_args:
                 cycled_args['antialias'] = False
             curve.append(NoiseResultsCurve(results, x=self.x_axes[index],
@@ -266,7 +273,9 @@ class NoisePlotWidget(MKIDPlotWidget):
 
 
 class InputsWidget(widgets.InputsWidget):
-    """Fixes set_parameters bug in pymeasure (would always set to default if existed)"""
+    """
+    Fixes set_parameters bug in pymeasure (would always set to default if existed).
+    Puts NoiseWidget last in layout column."""
     def set_parameters(self, parameter_objects):
         for name in self._inputs:
             parameter = parameter_objects[name]
@@ -274,6 +283,31 @@ class InputsWidget(widgets.InputsWidget):
             element.setValue(parameter.value)
             if hasattr(parameter, 'units') and parameter.units:
                 element.setSuffix(" %s" % parameter.units)
+    
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+
+        parameters = self._procedure.parameter_objects()
+        add_last = []
+        for name in self._inputs:
+            widget = getattr(self, name)
+            if isinstance(widget, NoiseInput):
+                add_last.append(name)
+                continue
+            if not isinstance(widget, self.NO_LABEL_INPUTS):
+                label = QtGui.QLabel(self)
+                label.setText("%s:" % parameters[name].name)
+                vbox.addWidget(label)
+            vbox.addWidget(widget)
+        for name in add_last:
+            widget = getattr(self, name)
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % parameters[name].name)
+            vbox.addWidget(label)
+            vbox.addWidget(widget)
+        self.setLayout(vbox)                
+                
 
 
 class MKIDInputsWidget(InputsWidget):

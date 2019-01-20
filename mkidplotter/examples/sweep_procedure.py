@@ -3,20 +3,28 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from mkidplotter import SweepBaseProcedure
-from pymeasure.experiment import (IntegerParameter, FloatParameter, BooleanParameter,
-                                  Parameter, Results)
+from mkidplotter import NoiseInput, SweepBaseProcedure, Results
+from pymeasure.experiment import IntegerParameter, FloatParameter, VectorParameter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
 class Sweep(SweepBaseProcedure):
+<<<<<<< HEAD
     frequency1 = FloatParameter("Ch 1 Frequency", units="GHz", default=4.0)
     span1 = FloatParameter("Ch 1 Span", units="MHz", default=2)
     frequency2 = FloatParameter("Ch 2 Frequency", units="GHz", default=4.0)
     span2 = FloatParameter("Ch 2 Span", units="MHz", default=2)
     take_noise = BooleanParameter("Take Noise Data", default=True)
+=======
+    frequency1 = FloatParameter("Channel 1 Center Frequency", units="GHz", default=4.0)
+    span1 = FloatParameter("Channel 1 Span", units="MHz", default=2)
+    frequency2 = FloatParameter("Channel 2 Center Frequency", units="GHz", default=4.0)
+    span2 = FloatParameter("Channel 2 Span", units="MHz", default=2)
+    noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10],
+                            ui_class=NoiseInput)
+>>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
     n_points = IntegerParameter("Number of Points", default=500)
 
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
@@ -34,7 +42,7 @@ class Sweep(SweepBaseProcedure):
         indices = np.arange(self.n_points)
         # sweep frequencies
         for i in indices:
-            self.emit('progress', i / self.n_points * 100)
+            self.send('progress', i / self.n_points * 100)
             loop_x[i] = 70 / self.attenuation * np.cos(2 * np.pi * i /
                                                        (self.n_points - 1))
             loop_y[i] = 70 / self.attenuation * np.sin(2 * np.pi * i /
@@ -43,20 +51,20 @@ class Sweep(SweepBaseProcedure):
                     "Q1": loop_y[i],
                     "I2": loop_x[i] * 2,
                     "Q2": loop_y[i]}
-            self.emit_results(data)
+            self.send("results", data)
             log.debug("Emitting results: %s" % data)
             sleep(self.wait_time)
-            if self.should_stop():
+            if self.stop():
                 log.warning("Caught the stop flag in the procedure")
-                break
+                return
 
-        if self.take_noise:
+        if self.noise[0]:
             # calculate bias point
             bias_i1, bias_q1 = 70 / self.attenuation, 0
             bias_i2, bias_q2 = 0, 70 / self.attenuation
 
-            self.emit_results({"bias I1": bias_i1, "bias Q1": bias_q1})
-            self.emit_results({"bias I2": bias_i2, "bias Q2": bias_q2})
+            self.send("results", {"bias I1": bias_i1, "bias Q1": bias_q1})
+            self.send("results", {"bias I2": bias_i2, "bias Q2": bias_q2})
             # take noise data
             frequency = np.linspace(1e3, 1e5, 100)
             phase = 1 / frequency
@@ -66,7 +74,7 @@ class Sweep(SweepBaseProcedure):
                     "Amplitude PSD1": amplitude,
                     "Phase PSD2": phase / 2,
                     "Amplitude PSD2": amplitude * 2}
-            self.emit_results(data)
+            self.send("results", data)
         else:
             frequency = np.nan
             phase = np.nan
@@ -130,7 +138,7 @@ class Sweep(SweepBaseProcedure):
                 except AttributeError:
                     records[key][:np.array(value).size] = value
         # make a temporary file for the gui data
-        file_path = tempfile.mktemp()
+        file_path = tempfile.mktemp(suffix='.txt')
         results = Results(procedure, file_path)
         log.info("Loading dataset into the temporary file %s", file_path)
         with open(file_path, mode='a') as temporary_file:

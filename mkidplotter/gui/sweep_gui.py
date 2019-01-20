@@ -5,16 +5,16 @@ import tempfile
 import numpy as np
 from cycler import cycler
 from datetime import datetime
-from pymeasure.experiment import Results
 from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
 from pymeasure.display.manager import Experiment
-from pymeasure.display.browser import BrowserItem
 from pymeasure.display.windows import ManagedWindow
 
-from mkidplotter.icons.manage_icons import get_image_icon
+from mkidplotter.gui.results import Results
+from mkidplotter.gui.browser import BrowserItem
 from mkidplotter.gui.managers import MKIDManager
 from mkidplotter.gui.procedures import SweepGUIProcedure
+from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
                                      MKIDBrowserWidget, MKIDResultsDialog)
 
@@ -22,11 +22,14 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
+# TODO: rename module as windows
+# TODO: fix: add some api for handling memory errors (no clue what this looks like)
+# maybe set process data structures to None in the shutdown() method
 class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
-                 plot_names=("Sweep Plot",)):
+                 plot_names=("Sweep Plot",), **kwargs):
         self.base_procedure_class = base_procedure_class
         self.ordering = copy.deepcopy(self.base_procedure_class().ordering)
         self.sweep_inputs = self.ordering["sweep_inputs"]
@@ -69,8 +72,8 @@ class SweepGUI(ManagedWindow):
                 inputs.append(parameter)
         super().__init__(procedure_class=procedure_class, inputs=inputs,
                          displays=base_inputs + inputs,
-                         x_axis=x_axes[0][0], y_axis=y_axes[0][0])
-        self.setWindowTitle('Test Sweep GUI')
+                         x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
+        self.setWindowTitle('Sweep GUI')
         self._abort_all = False
         self._abort_state = "abort"
         self.setWindowIcon(get_image_icon("loop.png"))
@@ -128,6 +131,7 @@ class SweepGUI(ManagedWindow):
         self.manager.queued.connect(self.queued)
         self.manager.running.connect(self.running)
         self.manager.finished.connect(self.finished)
+        self.manager.failed.connect(self.failed)
         self.manager.log.connect(self.log.handle)
 
         load_configuration = QtGui.QAction("Load configuration", self)
@@ -205,7 +209,7 @@ class SweepGUI(ManagedWindow):
         self.main.setLayout(vbox)
         self.setCentralWidget(self.main)
         self.main.show()
-        self.resize(1200, 800)
+        self.resize(1300, 800)
 
     @staticmethod
     def save_config(save_name, files, sweep_dict, parameter_dict):
@@ -254,13 +258,10 @@ class SweepGUI(ManagedWindow):
                     for curve in experiment.curve[index]:
                         plot.removeItem(curve)
             else:
-                for index, _ in enumerate(self.plot):
-                    for _, curve in enumerate(experiment.curve[index]):
+                for index, plot in enumerate(self.plot):
+                    for curve in experiment.curve[index]:
                         curve.update()
-                        # ignoreBounds helps remove problem with resetting color
-                        # then hiding/showing the plot
-                        # not ideal because it breaks auto-ranging
-                        self.plot[index].addItem(curve, ignoreBounds=True)
+                        plot.addItem(curve)
 
     def new_curve(self, results, **kwargs):
         curve = [plot_widget.new_curve(results, **kwargs)
@@ -284,9 +285,13 @@ class SweepGUI(ManagedWindow):
     def update_color(self, experiment, color):
         pixelmap = QtGui.QPixmap(24, 24)
         pixelmap.fill(color)
-        # setIcon breaks auto-ranging when hiding/showing the plot
-        # see comment in self.browser_item_changed()
+        # disable browser_item_changed() while changing the icon
+        self.browser.itemChanged.disconnect()
         experiment.browser_item.setIcon(0, QtGui.QIcon(pixelmap))
+        self.browser.itemChanged.connect(self.browser_item_changed)
+
+        self.lock_browser_item_changed = False
+
         for index, _ in enumerate(self.plot):
             for _, curve in enumerate(experiment.curve[index]):
                 if curve.pen is not None:
@@ -372,15 +377,22 @@ class SweepGUI(ManagedWindow):
                 procedure.set_parameters(parameter_values)
                 # set up the experiment
                 try:
-                    file_path = tempfile.mktemp()
+                    file_path = tempfile.mktemp(suffix=".txt")
                     results = Results(procedure, file_path)
                     experiment = self.new_experiment(results)
                     # change the file name to the real file name if it has one
-                    numbers = [f_index, *index]
-                    file_name = procedure.file_name(numbers, start_time)
+                    # temp, field, atten, fr
+                    numbers = [i for i in index] + [f_index]
+                    file_name = procedure.file_name("sweep", numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
+<<<<<<< HEAD
                     file_path = os.path.join(directory, file_name)
                     if file_path in files or file_path in previous_files:
+=======
+                    experiment.data_filename = file_name
+                    file_path = os.path.join(results.procedure.directory, file_name)
+                    if file_path in files:
+>>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
                         message = "'{}' is already in the queue, skipping"
                         log.error(message.format(file_path))
                     elif os.path.isfile(file_path):
@@ -446,6 +458,19 @@ class SweepGUI(ManagedWindow):
     def abort_all(self):
         self._abort_all = True
         self.abort()
+        
+    def failed(self, experiment):
+        if self.manager.experiments.has_next():
+            self.abort_all_button.setEnabled(False)
+            self.abort_button.setEnabled(True)
+            self.abort_button.setText("Resume")
+            self.abort_button.clicked.disconnect()
+            self.abort_button.clicked.connect(self.resume)
+            self._abort_state = "resume"
+        else:
+            self.abort_button.setEnabled(False)
+            self.abort_all_button.setEnabled(False)
+            self.browser_widget.clear_button.setEnabled(True)
 
     def finished(self, experiment):
         if not self.manager.experiments.has_next():
@@ -504,6 +529,7 @@ class SweepGUI(ManagedWindow):
                 sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
             self.inputs.set_parameters(parameters)
             self.base_inputs_widget.set_parameters(sweep_parameters)
+<<<<<<< HEAD
         action_use = QtGui.QAction(menu)
         action_use.setText("Use These Parameters")
         action_use.triggered.connect(lambda: set_parameters(experiment))
@@ -511,6 +537,21 @@ class SweepGUI(ManagedWindow):
         menu_dict = {"menu": menu, "open": action_open, "color": action_change_color,
                      "remove": action_remove, "use": action_use}
         return menu_dict
+=======
+        self.action_use = QtGui.QAction(menu)
+        self.action_use.setText("Use These Parameters")
+        self.action_use.triggered.connect(lambda: set_parameters(experiment))
+        menu.addAction(self.action_use)
+        return menu
+        
+    def clear_experiments(self):
+        reply = QtGui.QMessageBox.question(self, 'Remove Graphs',
+                                           "Are you sure you want to remove all of "
+                                           "the graphs?", QtGui.QMessageBox.Yes |
+                                           QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            self.manager.clear()
+>>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
 
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
@@ -544,12 +585,25 @@ class SweepGUI(ManagedWindow):
                 for index, _ in enumerate(self.plot):
                     for _, curve in enumerate(experiment.curve[index]):
                         curve.update()
+                experiment.data_filename = os.path.basename(file_name)
                 experiment.browser_item.setText(1, os.path.basename(file_name))
                 experiment.browser_item.progressbar.setValue(100.)
                 self.manager.load(experiment)
                 log.info('Opened data file %s' % file_name)
+<<<<<<< HEAD
         self.update_browser_column_width()
 
     def update_browser_column_width(self):
         for index in range(self.browser.columnCount()):
             self.browser.resizeColumnToContents(index)
+=======
+                self.browser_widget.show_button.setEnabled(True)
+                self.browser_widget.hide_button.setEnabled(True)
+                self.browser_widget.clear_button.setEnabled(True)
+
+    def closeEvent(self, event):
+        try:
+            self.procedure_class.close()
+        except AttributeError:
+            pass
+>>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
