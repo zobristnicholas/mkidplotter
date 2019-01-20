@@ -306,7 +306,6 @@ class SweepGUI(ManagedWindow):
         webbrowser.open("file://" + filename)
 
     def queue(self):
-        # _procedure = self.base_inputs_widget._procedure_class()
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
         directory = sweep_dict[self.directory_inputs]
@@ -385,14 +384,9 @@ class SweepGUI(ManagedWindow):
                     numbers = [i for i in index] + [f_index]
                     file_name = procedure.file_name("sweep", numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
-<<<<<<< HEAD
+                    experiment.data_filename = file_name
                     file_path = os.path.join(directory, file_name)
                     if file_path in files or file_path in previous_files:
-=======
-                    experiment.data_filename = file_name
-                    file_path = os.path.join(results.procedure.directory, file_name)
-                    if file_path in files:
->>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
                         message = "'{}' is already in the queue, skipping"
                         log.error(message.format(file_path))
                     elif os.path.isfile(file_path):
@@ -529,7 +523,6 @@ class SweepGUI(ManagedWindow):
                 sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
             self.inputs.set_parameters(parameters)
             self.base_inputs_widget.set_parameters(sweep_parameters)
-<<<<<<< HEAD
         action_use = QtGui.QAction(menu)
         action_use.setText("Use These Parameters")
         action_use.triggered.connect(lambda: set_parameters(experiment))
@@ -537,12 +530,6 @@ class SweepGUI(ManagedWindow):
         menu_dict = {"menu": menu, "open": action_open, "color": action_change_color,
                      "remove": action_remove, "use": action_use}
         return menu_dict
-=======
-        self.action_use = QtGui.QAction(menu)
-        self.action_use.setText("Use These Parameters")
-        self.action_use.triggered.connect(lambda: set_parameters(experiment))
-        menu.addAction(self.action_use)
-        return menu
         
     def clear_experiments(self):
         reply = QtGui.QMessageBox.question(self, 'Remove Graphs',
@@ -551,7 +538,6 @@ class SweepGUI(ManagedWindow):
                                            QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             self.manager.clear()
->>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
 
     def open_experiment(self):
         dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
@@ -590,20 +576,17 @@ class SweepGUI(ManagedWindow):
                 experiment.browser_item.progressbar.setValue(100.)
                 self.manager.load(experiment)
                 log.info('Opened data file %s' % file_name)
-<<<<<<< HEAD
         self.update_browser_column_width()
+        self.browser_widget.show_button.setEnabled(True)
+        self.browser_widget.hide_button.setEnabled(True)
+        self.browser_widget.clear_button.setEnabled(True)
 
     def update_browser_column_width(self):
         for index in range(self.browser.columnCount()):
             self.browser.resizeColumnToContents(index)
-=======
-                self.browser_widget.show_button.setEnabled(True)
-                self.browser_widget.hide_button.setEnabled(True)
-                self.browser_widget.clear_button.setEnabled(True)
 
     def closeEvent(self, event):
         try:
             self.procedure_class.close()
         except AttributeError:
             pass
->>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc

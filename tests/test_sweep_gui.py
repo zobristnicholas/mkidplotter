@@ -9,7 +9,7 @@ SWEEP_PARAMETERS = ["start_atten", "stop_atten", "n_atten",
                     "start_temp", "stop_temp", "n_temp",
                     "frequencies1", "spans1", "frequencies2", "spans2"]
 
-PROCEDURE_PARAMETERS = ["take_noise", "n_points"]
+PROCEDURE_PARAMETERS = ["noise", "n_points"]
 
 
 @pytest.mark.qt_log_level_fail("WARNING")
@@ -21,21 +21,21 @@ def test_init(sweep_gui, qtbot):
                          "start_field, stop_field, n_field, "
                          "start_temp, stop_temp, n_temp, "
                          "frequencies1, spans1, frequencies2, spans2,"
-                         "take_noise, n_points",
+                         "noise, n_points",
                          [(80, 100, 2,
                            0, 4, 2,
                            100, 200, 2,
                            [5.0, 6], 3.0, 7.0, 2.0,
-                           True, 20),
+                           [1, 1, 10, 1, -1, 10], 20),
                           (90, 90, 1,
                            2, 2, 1,
                            300, 300, 1,
                            5.0, 2.0, 4.0, 3.0,
-                           False, 100)])
+                           [0, 1, 10, 1, -1, 10], 100)])
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
                start_field, stop_field, n_field, start_temp, stop_temp, n_temp,
-               frequencies1, spans1, frequencies2, spans2, take_noise, n_points):
+               frequencies1, spans1, frequencies2, spans2, noise, n_points):
     # set the sweep parameters
     for parameter in SWEEP_PARAMETERS:
         parameter_input = getattr(sweep_gui.base_inputs_widget, parameter)
@@ -62,12 +62,13 @@ def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
     files = os.listdir(directory)
     n_files = len(files)
     message = "there should be {} not {} files in the output directory"
-    assert len(files) == n_sweep, message.format(n_sweep, n_files)
+    assert len(files) == n_sweep + 1, message.format(n_sweep, n_files)
     shown_names = []
     for experiment in sweep_gui.manager.experiments.queue:
         shown_names.append(experiment.browser_item.text(1))
     for file_ in files:
-        assert file_ in shown_names, "{} not in {}".format(file_, shown_names)
+        assert file_ in shown_names or file_[:6] == 'config', \
+            "{} not in {}".format(file_, shown_names)
     for file_ in shown_names:
         assert file_ in files, "{} not in {}".format(file_, files)
     assert files[0].split('.')[-1] == "npz", "the output file has the wrong extension"
@@ -127,10 +128,10 @@ def test_load_and_run(sweep_gui, qtbot, request):
         qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
     # TODO: understand why this test breaks any that come after it
 
-#TODO: test load configuration
-def test_load_config(sweep_gui, qtbot):
-    saved_directory = request.config.cache.get("directory", None)
-    saved_directory = Path(saved_directory)
-    config_file = saved_directory.glob("config_sweep*.npy")[0]
+# #TODO: test load configuration
+# def test_load_config(sweep_gui, qtbot):
+#     saved_directory = request.config.cache.get("directory", None)
+#     saved_directory = Path(saved_directory)
+#     config_file = saved_directory.glob("config_sweep*.npy")[0]
 
 

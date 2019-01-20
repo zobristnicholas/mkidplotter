@@ -87,16 +87,6 @@ class MKIDProcedure(Procedure):
 
         if not isinstance(numbers, (list, tuple)):
             numbers = [numbers]
-<<<<<<< HEAD
-        base = "sweep_"
-        for number in numbers:
-            base += "{:d}_".format(number)
-        if time is None:
-            base += "%y%m%d_%H%M%S.npz"
-            base = datetime.now().strftime(base)
-        else:
-            base += time + ".npz"
-=======
         if prefix:
             base = prefix + "_"
         else:
@@ -112,7 +102,6 @@ class MKIDProcedure(Procedure):
         else:
             base += time
         base += ".npz"
->>>>>>> f5055ce95f58e8fde04fa261e053abb821c546bc
         self._file_name = base
         return self._file_name
 
