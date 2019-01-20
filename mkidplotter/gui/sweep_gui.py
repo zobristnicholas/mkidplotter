@@ -24,7 +24,6 @@ log.addHandler(logging.NullHandler())
 
 # TODO: rename module as windows
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
-# maybe set process data structures to None in the shutdown() method
 class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
@@ -77,6 +76,11 @@ class SweepGUI(ManagedWindow):
         self._abort_all = False
         self._abort_state = "abort"
         self.setWindowIcon(get_image_icon("loop.png"))
+
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        file_path = os.path.join(directory, "sweep_default.npz")
+        if os.path.isfile(file_path):
+            self.set_config(file_path)
 
     def _setup_ui(self):
         self.log_widget = LogWidget()
@@ -134,14 +138,14 @@ class SweepGUI(ManagedWindow):
         self.manager.failed.connect(self.failed)
         self.manager.log.connect(self.log.handle)
 
-        load_configuration = QtGui.QAction("Load configuration", self)
+        load_configuration = QtGui.QAction("Load Configuration", self)
         load_configuration.triggered.connect(self.load_config)
 
-        save_as_default = QtGui.QAction("Save setup as default", self)
+        save_as_default = QtGui.QAction("Save Current Settings as Default", self)
         save_as_default.triggered.connect(self.save_as_default)
 
         main_menu = self.menuBar()
-        file_menu = main_menu.addMenu('File')
+        file_menu = main_menu.addMenu('Options')
         file_menu.addAction(load_configuration)
         file_menu.addAction(save_as_default)
 
@@ -212,11 +216,8 @@ class SweepGUI(ManagedWindow):
         self.resize(1300, 800)
 
     @staticmethod
-    def save_config(save_name, files, sweep_dict, parameter_dict):
-        for index, file_ in enumerate(files):
-            files[index] = os.path.basename(file_)
-        np.savez(save_name, files=files, sweep_dict=sweep_dict,
-                 parameter_dict=parameter_dict)
+    def save_config(save_name, sweep_dict, parameter_dict):
+        np.savez(save_name, sweep_dict=sweep_dict, parameter_dict=parameter_dict)
 
     def load_config(self):
         sweep_procedure = self.base_inputs_widget.get_procedure()
@@ -224,6 +225,10 @@ class SweepGUI(ManagedWindow):
         directory = sweep_dict[self.directory_inputs]
         file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
                                                       "Config files (config_sweep*.npz)")
+        if file_name:
+            self.set_config(file_name)
+
+    def set_config(self, file_name):
         npz_file = np.load(file_name)
         # set sweep parameters
         sweep_dict = npz_file['sweep_dict'].item()
@@ -244,7 +249,14 @@ class SweepGUI(ManagedWindow):
         self.inputs.set_parameters(parameters)
 
     def save_as_default(self):
-        pass
+        sweep_procedure = self.base_inputs_widget.get_procedure()
+        sweep_dict = sweep_procedure.parameter_values()
+        procedure = self.make_procedure()
+        parameter_values = procedure.parameter_values()
+        parameter_dict = {"default": parameter_values}
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        file_path = os.path.join(directory, "sweep_default.npz")
+        self.save_config(file_path, sweep_dict, parameter_dict)
 
     def setup_plot(self, plots):
         pass
@@ -401,7 +413,7 @@ class SweepGUI(ManagedWindow):
                     log.error('Failed to queue experiment', exc_info=True)
         self.update_browser_column_width()
         save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
-        self.save_config(save_name, files, sweep_dict, parameter_dict)
+        self.save_config(save_name, sweep_dict, parameter_dict)
 
     def resume(self):
         if self.manager.experiments.has_next():
@@ -576,10 +588,11 @@ class SweepGUI(ManagedWindow):
                 experiment.browser_item.progressbar.setValue(100.)
                 self.manager.load(experiment)
                 log.info('Opened data file %s' % file_name)
+                self.browser_widget.show_button.setEnabled(True)
+                self.browser_widget.hide_button.setEnabled(True)
+                self.browser_widget.clear_button.setEnabled(True)
         self.update_browser_column_width()
-        self.browser_widget.show_button.setEnabled(True)
-        self.browser_widget.hide_button.setEnabled(True)
-        self.browser_widget.clear_button.setEnabled(True)
+
 
     def update_browser_column_width(self):
         for index in range(self.browser.columnCount()):

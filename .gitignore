@@ -105,3 +105,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# gui configs
+./mkidplotter/gui/user_data/*

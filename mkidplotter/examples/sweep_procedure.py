@@ -26,6 +26,7 @@ class Sweep(SweepBaseProcedure):
 
     def startup(self):
         log.info("Starting procedure")
+        self.update_metadata()
 
     def execute(self):
         log.info("Measuring the loop with %d points", self.n_points)

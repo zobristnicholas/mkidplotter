@@ -74,6 +74,7 @@ class SweepGUIProcedure2(Procedure):
 class MKIDProcedure(Procedure):
     # optional daq from analogreadout connect to the class with connect_daq()
     daq = None
+
     def __init__(self, *args, **kwargs):
         self._parameter_names()
         self._file_name = None
