@@ -182,8 +182,14 @@ class MKIDProcedure(Procedure):
         
     @classmethod
     def connect_daq(cls, daq):
-        """Connects all current and future instances of the procedure class to the daq"""
+        """Connects all current and future instances of the procedure class to the DAQ"""
         cls.daq = daq
+    
+    @classmethod    
+    def close(cls):
+        """Close the DAQ resource."""
+        if cls.daq is not None and callable(cls.daq.close):
+            cls.daq.close()
 
 
 class SweepBaseProcedure(MKIDProcedure):

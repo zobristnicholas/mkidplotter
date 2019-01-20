@@ -521,3 +521,9 @@ class SweepGUI(ManagedWindow):
                 self.browser_widget.show_button.setEnabled(True)
                 self.browser_widget.hide_button.setEnabled(True)
                 self.browser_widget.clear_button.setEnabled(True)
+
+    def closeEvent(self, event):
+        try:
+            self.procedure_class.close()
+        except AttributeError:
+            pass
