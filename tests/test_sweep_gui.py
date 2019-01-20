@@ -1,6 +1,7 @@
 import os
 import pytest
 import numpy as np
+from pathlib import Path
 from pymeasure.display.Qt import QtCore, QtGui
 
 SWEEP_PARAMETERS = ["start_atten", "stop_atten", "n_atten",
@@ -25,12 +26,12 @@ def test_init(sweep_gui, qtbot):
                            0, 4, 2,
                            100, 200, 2,
                            [5.0, 6], 3.0, 7.0, 2.0,
-                           True, 400),
+                           True, 20),
                           (90, 90, 1,
                            2, 2, 1,
                            300, 300, 1,
                            5.0, 2.0, 4.0, 3.0,
-                           False, 300)])
+                           False, 100)])
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
                start_field, stop_field, n_field, start_temp, stop_temp, n_temp,
@@ -125,3 +126,11 @@ def test_load_and_run(sweep_gui, qtbot, request):
     with qtbot.waitSignal(sweep_gui.manager.finished, timeout=1000, raising=True):
         qtbot.mouseClick(sweep_gui.queue_button, QtCore.Qt.LeftButton)
     # TODO: understand why this test breaks any that come after it
+
+#TODO: test load configuration
+def test_load_config(sweep_gui, qtbot):
+    saved_directory = request.config.cache.get("directory", None)
+    saved_directory = Path(saved_directory)
+    config_file = saved_directory.glob("config_sweep*.npy")[0]
+
+

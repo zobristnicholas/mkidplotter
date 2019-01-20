@@ -136,8 +136,6 @@ class SweepGUI(ManagedWindow):
         save_as_default = QtGui.QAction("Save setup as default", self)
         save_as_default.triggered.connect(self.save_as_default)
 
-        self.statusBar()
-
         main_menu = self.menuBar()
         file_menu = main_menu.addMenu('File')
         file_menu.addAction(load_configuration)
@@ -211,11 +209,35 @@ class SweepGUI(ManagedWindow):
 
     @staticmethod
     def save_config(save_name, files, sweep_dict, parameter_dict):
+        for index, file_ in enumerate(files):
+            files[index] = os.path.basename(file_)
         np.savez(save_name, files=files, sweep_dict=sweep_dict,
                  parameter_dict=parameter_dict)
 
     def load_config(self):
-        pass
+        sweep_procedure = self.base_inputs_widget.get_procedure()
+        sweep_dict = sweep_procedure.parameter_values()
+        directory = sweep_dict[self.directory_inputs]
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
+                                                      "Config files (config_sweep*.npz)")
+        npz_file = np.load(file_name)
+        # set sweep parameters
+        sweep_dict = npz_file['sweep_dict'].item()
+        sweep_parameters = self.base_procedure_class().parameter_objects()
+        for key, value in sweep_dict.items():
+            sweep_parameters[key].value = value
+        self.base_inputs_widget.set_parameters(sweep_parameters)
+        # set additional parameters
+        parameter_dict = npz_file['parameter_dict'].item()
+        files = list(parameter_dict.keys())
+        parameters = self.make_procedure().parameter_objects()
+        ignore_parameters = [params[0] for params in self.sweep_inputs]
+        ignore_parameters += [param for params in self.frequency_inputs
+                              for param in params]
+        for key, value in parameter_dict[files[0]].items():
+            if key not in ignore_parameters:
+                parameters[key].value = value
+        self.inputs.set_parameters(parameters)
 
     def save_as_default(self):
         pass
@@ -282,6 +304,7 @@ class SweepGUI(ManagedWindow):
         # _procedure = self.base_inputs_widget._procedure_class()
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
+        directory = sweep_dict[self.directory_inputs]
         sweeps = []
         for _, start, stop, n_points, _ in self.sweep_inputs:
             sweeps.append(np.linspace(sweep_dict[start], sweep_dict[stop],
@@ -356,7 +379,7 @@ class SweepGUI(ManagedWindow):
                     numbers = [f_index, *index]
                     file_name = procedure.file_name(numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
-                    file_path = os.path.join(results.procedure.directory, file_name)
+                    file_path = os.path.join(directory, file_name)
                     if file_path in files or file_path in previous_files:
                         message = "'{}' is already in the queue, skipping"
                         log.error(message.format(file_path))
@@ -364,15 +387,14 @@ class SweepGUI(ManagedWindow):
                         message = "'{}' already exists, skipping"
                         log.error(message.format(file_path))
                     else:
-                        file_name = os.path.join(procedure.directory, file_name)
+                        parameter_dict[file_name] = copy.deepcopy(parameter_values)
+                        file_name = os.path.join(directory, file_name)
                         files.append(file_name)
                         self.manager.queue(experiment)
-                        parameter_dict[file_name] = copy.deepcopy(parameter_values)
                 except Exception:
                     log.error('Failed to queue experiment', exc_info=True)
         self.update_browser_column_width()
-        save_name = os.path.join(procedure.directory,
-                                 "config_sweep_" + start_time + ".npz")
+        save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
         self.save_config(save_name, files, sweep_dict, parameter_dict)
 
     def resume(self):
@@ -509,6 +531,7 @@ class SweepGUI(ManagedWindow):
                 message = "The file %s cannot be opened twice."
                 QtGui.QMessageBox.warning(self, "Load Error",
                                           message % os.path.basename(file_name))
+                log.warning(message, os.path.basename(file_name))
             elif file_name == '':
                 return
             else:
