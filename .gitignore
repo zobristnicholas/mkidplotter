@@ -107,4 +107,4 @@ venv.bak/
 .mypy_cache/
 
 # gui configs
-./mkidplotter/gui/user_data/*
+*.npz
