@@ -41,6 +41,7 @@ class ManagedWindow(w.ManagedWindow):
                                          (227, 119, 194), (127, 127, 127), (188, 189, 34),
                                          (23, 190, 207)])
         super().__init__(x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
+        self.update_browser_column_width()
 
     def _setup_ui(self):
         self.log_widget = LogWidget()
