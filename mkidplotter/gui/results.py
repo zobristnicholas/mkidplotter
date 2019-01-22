@@ -8,7 +8,7 @@ log.addHandler(logging.NullHandler())
 
 
 class Results(results.Results):
-    """ Bug fix for pymeasure Results class. Fixes reading in issue on Windows.
+    """Bug fix for pymeasure Results class. Fixes reading in issue on Windows.
         
     Results class provides a convenient interface to reading and
     writing data in connection with a :class:`.Procedure` object.
@@ -38,7 +38,7 @@ class Results(results.Results):
                 self._data = pd.DataFrame(columns=self.procedure.DATA_COLUMNS)
         else:  # Concatenate additional data, if any, to already loaded data
             skiprows = len(self._data) + self._header_count
-            # 'c' engine broken on windows (line seperator issue). use 'python' instead
+            # 'c' engine broken on windows (line separator issue). Use 'python' instead
             chunks = pd.read_csv(self.data_filename, comment=Results.COMMENT,
                                  header=0, names=self._data.columns,
                                  chunksize=Results.CHUNK_SIZE, skiprows=skiprows,
@@ -54,4 +54,27 @@ class Results(results.Results):
                                            ignore_index=True)
             except Exception:
                 pass  # All data is up to date
+        return self._data
+
+
+class ContinuousResults(Results):
+    """
+    Overloads the data property of Results to reload the whole data set from the file
+    each time data is called.
+    """
+    @property
+    def data(self):
+        # Need to update header count for correct referencing
+        if self._header_count == -1:
+            self._header_count = len(
+                self.header()[-1].split(Results.LINE_BREAK))
+        chunks = pd.read_csv(self.data_filename, comment=Results.COMMENT,
+                             header=0, names=self.procedure.DATA_COLUMNS,
+                             chunksize=Results.CHUNK_SIZE, skiprows=self._header_count,
+                             iterator=True, engine='python')
+        tmp_frame = pd.concat(chunks, ignore_index=True)
+        if len(tmp_frame) > 0:
+            self._data = tmp_frame
+        else:
+            self._data = pd.DataFrame(columns=self.procedure.DATA_COLUMNS)
         return self._data

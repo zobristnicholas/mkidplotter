@@ -76,6 +76,7 @@ def test_queue(sweep_gui, qtbot, request, start_atten, stop_atten, n_atten,
 
 @pytest.mark.qt_log_level_fail("WARNING")
 def test_color_change(sweep_gui, qtbot):
+    sweep_gui.inputs.n_points.setValue(10)
     n_atten = sweep_gui.base_inputs_widget.n_atten.value()
     n_field = sweep_gui.base_inputs_widget.n_field.value()
     n_temp = sweep_gui.base_inputs_widget.n_temp.value()
@@ -99,7 +100,10 @@ def test_load_and_run(sweep_gui, qtbot, request):
     saved_directory = request.config.cache.get("directory", None)
     saved_parameters = request.config.cache.get("saved_parameters", None)
     saved_sweep = request.config.cache.get("saved_sweep", None)
-    file_name = os.listdir(saved_directory)[0]
+    files = os.listdir(saved_directory)
+    for file_name in files:
+        if file_name[:6] != "config":
+            break
     sweep_gui.load_from_file([os.path.join(saved_directory, file_name)])
     # find the corresponding browser item and use those parameters in the gui
     item = sweep_gui.browser.topLevelItem(0)

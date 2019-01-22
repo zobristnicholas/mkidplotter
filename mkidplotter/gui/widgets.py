@@ -161,12 +161,34 @@ class MKIDPlotWidget(widgets.PlotWidget):
                 legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
                 legend_item_sample = MKIDItemSample(legend_item)
                 self.legend.addItem(legend_item_sample, text)
+        # Set the results curve class
+        self.curve_class = MKIDResultsCurve
 
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(0)
         vbox.addWidget(self.plot_frame)
         self.setLayout(vbox)
+
+    def new_curve(self, results, **kwargs):
+        curve = []
+        for index, _ in enumerate(self.x_axes):
+            # overwrite cycler with kwargs
+            cycled_args = next(self.cycler)
+            cycled_args.update(kwargs)
+            # need to get copies of the QObjects otherwise they will be overwritten later
+            cycled_args = copy_options(cycled_args)
+            if 'color' not in cycled_args.keys():
+                cycled_args.update({'color': pg.intColor(0)})
+            if 'pen' not in cycled_args:
+                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=2)
+            if 'antialias' not in cycled_args:
+                cycled_args['antialias'] = False
+
+            curve.append(self.curve_class(results, x=self.x_axes[index],
+                                          y=self.y_axes[index], **cycled_args))
+
+        return curve
 
 
 class SweepPlotWidget(MKIDPlotWidget):
@@ -199,32 +221,18 @@ class SweepPlotWidget(MKIDPlotWidget):
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(True)
 
-    def new_curve(self, results, **kwargs):
-        curve = []
-        for index, _ in enumerate(self.x_axes):
-            # overwrite cycler with kwargs
-            cycled_args = next(self.cycler)
-            cycled_args.update(kwargs)
-            # need to get copies of the QObjects otherwise they will be overwritten later
-            cycled_args = copy_options(cycled_args)
-            if 'color' not in cycled_args.keys():
-                cycled_args.update({'color': pg.intColor(0)})
-            if 'pen' not in cycled_args:
-                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=2)
-            if 'antialias' not in cycled_args:
-                cycled_args['antialias'] = False
-
-            curve.append(MKIDResultsCurve(results, x=self.x_axes[index],
-                                          y=self.y_axes[index], **cycled_args))
-
-        return curve
-
 
 class TransmissionPlotWidget(SweepPlotWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(False)
 
+
+class PulsePlotWidget(TransmissionPlotWidget):
+    pass
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, refresh_time=1, **kwargs)
+    # TODO: don't want constant updating but don't want to update in the middle of emit()
 
 class NoisePlotWidget(MKIDPlotWidget):
     """Plot widget for noise"""
@@ -251,25 +259,7 @@ class NoisePlotWidget(MKIDPlotWidget):
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
         self.plot.setLogMode(True, True)
-
-    def new_curve(self, results, **kwargs):
-        curve = []
-        for index, _ in enumerate(self.x_axes):
-            # overwrite cycler with kwargs
-            cycled_args = next(self.cycler)
-            cycled_args.update(kwargs)
-            # need to get copies of the QObjects otherwise they will be overwritten later
-            cycled_args = copy_options(cycled_args)
-            if 'color' not in cycled_args.keys():
-                cycled_args.update({'color': pg.intColor(0)})
-            if 'pen' not in cycled_args:
-                cycled_args['pen'] = pg.mkPen(color=cycled_args['color'], width=2)
-            if 'antialias' not in cycled_args:
-                cycled_args['antialias'] = False
-            curve.append(NoiseResultsCurve(results, x=self.x_axes[index],
-                                           y=self.y_axes[index], **cycled_args))
-
-        return curve
+        self.curve_class = NoiseResultsCurve
 
 
 class InputsWidget(widgets.InputsWidget):
@@ -283,44 +273,12 @@ class InputsWidget(widgets.InputsWidget):
             element.setValue(parameter.value)
             if hasattr(parameter, 'units') and parameter.units:
                 element.setSuffix(" %s" % parameter.units)
-    
-    def _layout(self):
-        vbox = QtGui.QVBoxLayout(self)
-        vbox.setSpacing(6)
 
-        parameters = self._procedure.parameter_objects()
-        add_last = []
-        for name in self._inputs:
-            widget = getattr(self, name)
-            if isinstance(widget, NoiseInput):
-                add_last.append(name)
-                continue
-            if not isinstance(widget, self.NO_LABEL_INPUTS):
-                label = QtGui.QLabel(self)
-                label.setText("%s:" % parameters[name].name)
-                vbox.addWidget(label)
-            vbox.addWidget(widget)
-        for name in add_last:
-            widget = getattr(self, name)
-            label = QtGui.QLabel(self)
-            label.setText("%s:" % parameters[name].name)
-            vbox.addWidget(label)
-            vbox.addWidget(widget)
-        self.setLayout(vbox)                
-                
-
-
-class MKIDInputsWidget(InputsWidget):
     def _setup_ui(self):
         parameter_objects = self._procedure.parameter_objects()
-        self._make_input(self._inputs["directory_inputs"],
-                         parameter_objects[self._inputs["directory_inputs"]])
-        for inputs in self._inputs["frequency_inputs"]:
-            for name in inputs[1:]:
-                self._make_input(name, parameter_objects[name])
-        for inputs in self._inputs["sweep_inputs"]:
-            for name in inputs[1:-1]:
-                self._make_input(name, parameter_objects[name])
+        for name in self._inputs:
+            parameter = parameter_objects[name]
+            self._make_input(name, parameter)
 
     def _make_input(self, name, parameter):
         if parameter.ui_class is not None:
@@ -355,6 +313,48 @@ class MKIDInputsWidget(InputsWidget):
                              .format(type(parameter)))
 
         setattr(self, name, element)
+
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+        inputs = list(self._inputs)
+
+        for name in inputs:
+            if isinstance(getattr(self, name), (FileInput, DirectoryInput)):
+                inputs.remove(name)
+                self._add_widget(name, vbox)
+
+        for name in inputs:
+            if isinstance(getattr(self, name), NoiseInput):
+                continue
+            inputs.remove(name)
+            self._add_widget(name, vbox)
+
+        for name in inputs:
+            self._add_widget(name, vbox)
+        self.setLayout(vbox)
+
+    def _add_widget(self, name, vbox):
+        parameters = self._procedure.parameter_objects()
+        widget = getattr(self, name)
+        if not isinstance(widget, self.NO_LABEL_INPUTS):
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % parameters[name].name)
+            vbox.addWidget(label)
+        vbox.addWidget(widget)
+
+
+class MKIDInputsWidget(InputsWidget):
+    def _setup_ui(self):
+        parameter_objects = self._procedure.parameter_objects()
+        self._make_input(self._inputs["directory_inputs"],
+                         parameter_objects[self._inputs["directory_inputs"]])
+        for inputs in self._inputs["frequency_inputs"]:
+            for name in inputs[1:]:
+                self._make_input(name, parameter_objects[name])
+        for inputs in self._inputs["sweep_inputs"]:
+            for name in inputs[1:-1]:
+                self._make_input(name, parameter_objects[name])
 
     def _layout(self):
         parameters = self._procedure.parameter_objects()

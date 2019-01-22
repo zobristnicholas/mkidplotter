@@ -10,11 +10,11 @@ from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
 from pymeasure.display.manager import Experiment
 
-from mkidplotter.gui.results import Results
+from mkidplotter.gui.managers import Manager
 from mkidplotter.gui.browser import BrowserItem
-from mkidplotter.gui.managers import MKIDManager
 from mkidplotter.gui.procedures import SweepGUIProcedure
 from mkidplotter.icons.manage_icons import get_image_icon
+from mkidplotter.gui.results import Results, ContinuousResults
 from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
                                      MKIDBrowserWidget, MKIDResultsDialog)
 
@@ -24,8 +24,12 @@ log.addHandler(logging.NullHandler())
 
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
 class ManagedWindow(w.ManagedWindow):
-    def __init__(self, x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
-                 plot_widget_classes=(), plot_names=(), **kwargs):
+    def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(),
+                 y_labels=(), legend_text=(), plot_widget_classes=(), plot_names=(),
+                 **kwargs):
+        if not inputs:
+            inputs = tuple(procedure_class().parameter_names)
+
         self._abort_state = "abort"
         self._abort_all = False
         self.plot_widget_classes = plot_widget_classes
@@ -40,7 +44,8 @@ class ManagedWindow(w.ManagedWindow):
                                          (214, 39, 40), (148, 103, 189), (140, 86, 75),
                                          (227, 119, 194), (127, 127, 127), (188, 189, 34),
                                          (23, 190, 207)])
-        super().__init__(x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
+        super().__init__(procedure_class, inputs=inputs, x_axis=x_axes[0][0],
+                         y_axis=y_axes[0][0], **kwargs)
         self.update_browser_column_width()
 
     def _setup_ui(self):
@@ -87,8 +92,8 @@ class ManagedWindow(w.ManagedWindow):
 
         self.inputs = InputsWidget(self.procedure_class, self.inputs,
                                    parent=self)
-        self.manager = MKIDManager(self.plot, self.browser,
-                                   log_level=self.log_level, parent=self)
+        self.manager = Manager(self.plot, self.browser,
+                               log_level=self.log_level, parent=self)
         self.manager.abort_returned.connect(self.abort_returned)
         self.manager.queued.connect(self.queued)
         self.manager.running.connect(self.running)
@@ -428,9 +433,9 @@ class SweepGUI(ManagedWindow):
         for parameter in parameters:
             if parameter not in base_inputs:
                 inputs.append(parameter)
-        super().__init__(procedure_class=procedure_class, inputs=inputs,
-                         displays=base_inputs + inputs, x_axes=x_axes, y_axes=y_axes,
-                         x_labels=x_labels, y_labels=y_labels, legend_text=legend_text,
+        super().__init__(procedure_class, inputs=inputs, displays=base_inputs + inputs,
+                         x_axes=x_axes, y_axes=y_axes, x_labels=x_labels,
+                         y_labels=y_labels, legend_text=legend_text,
                          plot_widget_classes=plot_widget_classes, plot_names=plot_names,
                          **kwargs)
         self.setWindowTitle('Sweep GUI')
@@ -614,3 +619,24 @@ class SweepGUI(ManagedWindow):
         self.update_browser_column_width()
         save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
         self.save_config(save_name, sweep_dict, parameter_dict)
+
+
+class PulseGUI(ManagedWindow):
+    def queue(self):
+        # make results object to hold the gui data
+        procedure = self.make_procedure()  # Procedure class was passed at construction
+        file_path = tempfile.mktemp(suffix=".txt")
+        results = ContinuousResults(procedure, file_path)
+        # make the experiment
+        experiment = self.new_experiment(results)
+        file_name = procedure.file_name("pulse")
+        experiment.browser_item.setText(1, file_name)
+        experiment.data_filename = file_name
+        # queue the experiment
+        self.manager.queue(experiment)
+        # do some post queuing stuff
+        self.update_browser_column_width()
+        self.save_config()
+
+    def save_config(self):
+        pass

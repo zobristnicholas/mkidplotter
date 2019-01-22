@@ -106,56 +106,13 @@ class MKIDProcedure(Procedure):
         self._file_name = base
         return self._file_name
 
-    def send(self, topic, record):
-        """
-        Sends data to the Gui. It is a layer of logic over the built in emit() so that not
-        all of the parameters need to be defined in order to emit the data. Replaces empty
-        fields with np.nan. This function will not error if no gui is attached to the
-        procedure.
-        
-        emit() was not simply overloaded since it is monkey patched by the pymeasure
-        worker class.
-        """
-        if topic == "results":
-            # collect the data into a numpy structured array
-            size = max([value.size if hasattr(value, "shape") and value.shape
-                        else np.array([value]).size for value in record.values()])
-            records = np.empty((size,), dtype=[(key, float) for key in self.DATA_COLUMNS])
-            records.fill(np.nan)
-            for key, value in record.items():
-                try:
-                    records[key][:value.size] = value
-                except AttributeError:
-                    records[key][:np.array(value).size] = value
-    
-            for key in self.DATA_COLUMNS:
-                if key not in record.keys():
-                    records[key] = np.nan
-            for index in range(size):
-                try:
-                    # log.warning("sending {}".format(records[index]))
-                    self.emit(topic, records[index])
-                except NotImplementedError:
-                    pass
-        else:
-            try:
-                self.emit(topic, record)
-            except NotImplementedError:
-                pass
-            
-    def stop(self):
-        """
-        Checks if the procedure should stop. It is a layer of logic over the built in
-        should_stop() so that the function will not error if no gui is attached to the
-        procedure.
-        
-        should_stop() was not simply overloaded since it is monkey patched by the
-        pymeasure worker class.
-        """
-        try:
-            return self.should_stop()
-        except NotImplementedError:
-            return False
+    def emit(self, topic, record, clear=False):
+        """Stops emit() from being required to be patched by a worker."""
+        pass
+
+    def should_stop(self):
+        """Stops should_stop() from being required to be patched by a worker."""
+        pass
         
     def _parameter_names(self):
         """Provides an ordered list of parameter names before base class init."""

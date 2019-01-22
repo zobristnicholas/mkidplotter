@@ -3,9 +3,11 @@ import warnings
 import numpy as np
 from mkidplotter.gui.results import Results
 from mkidplotter.gui.inputs import NoiseInput
-from mkidplotter.gui.windows import SweepGUI
+from mkidplotter.gui.windows import SweepGUI, PulseGUI
+from mkidplotter.gui.parameters import (DirectoryParameter, FileParameter,
+                                        TextEditParameter)
 from mkidplotter.gui.widgets import (SweepPlotWidget, TransmissionPlotWidget,
-                                     NoisePlotWidget)
+                                     NoisePlotWidget, PulsePlotWidget)
 from mkidplotter.gui.procedures import (SweepGUIProcedure, SweepGUIProcedure2,
                                         SweepBaseProcedure, MKIDProcedure)
 from mkidplotter.icons.manage_icons import get_image_icon

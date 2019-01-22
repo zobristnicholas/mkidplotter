@@ -3,26 +3,25 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from mkidplotter import NoiseInput, SweepBaseProcedure, Results
+from mkidplotter import NoiseInput, MKIDProcedure, Results, DirectoryParameter
 from pymeasure.experiment import IntegerParameter, FloatParameter, VectorParameter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class Sweep(SweepBaseProcedure):
+class Pulse(MKIDProcedure):
+    directory = DirectoryParameter("Data Directory", default='/Users/nicholaszobrist/Desktop/test')
     frequency1 = FloatParameter("Ch 1 Center Frequency", units="GHz", default=4.0)
-    span1 = FloatParameter("Ch 1 Span", units="MHz", default=2)
     frequency2 = FloatParameter("Ch 2 Center Frequency", units="GHz", default=4.0)
-    span2 = FloatParameter("Ch 2 Span", units="MHz", default=2)
-    noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10],
-                            ui_class=NoiseInput)
+    attenuation = FloatParameter("DAC Attenuation", units="dB", default=0)
+    noise = VectorParameter("Noise", default=[1, 1, 10], ui_class=NoiseInput)
     n_points = IntegerParameter("Number of Points", default=500)
+    n_pulses = IntegerParameter("Number of Pulses", default=100)
 
-    DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
-                    'I2', 'Q2', "bias I2", "bias Q2", 'Amplitude PSD2', 'Phase PSD2',
-                    'frequency']
-    wait_time = 0.01
+    DATA_COLUMNS = ['t', 'phase 1', 'amplitude 1', 'phase 2', 'amplitude 2', 'frequency',
+                    'phase PSD1', 'amplitude PSD1', 'phase PSD2', 'amplitude PSD2']
+    wait_time = 0.1
 
     def startup(self):
         log.info("Starting procedure")
@@ -30,67 +29,56 @@ class Sweep(SweepBaseProcedure):
 
     def execute(self):
         log.info("Measuring the loop with %d points", self.n_points)
-        loop_x = np.zeros(self.n_points)
-        loop_y = np.zeros(self.n_points)
-        indices = np.arange(self.n_points)
-        # sweep frequencies
-        for i in indices:
-            self.emit('progress', i / self.n_points * 100)
-            loop_x[i] = 70 / self.attenuation * np.cos(2 * np.pi * i /
-                                                       (self.n_points - 1))
-            loop_y[i] = 70 / self.attenuation * np.sin(2 * np.pi * i /
-                                                       (self.n_points - 1))
-            data = {"I1": loop_x[i],
-                    "Q1": loop_y[i],
-                    "I2": loop_x[i] * 2,
-                    "Q2": loop_y[i]}
-            self.emit("results", data)
+        pulse1_p = np.zeros((self.n_pulses, self.n_points))
+        pulse1_a = np.zeros((self.n_pulses, self.n_points))
+        pulse2_p = np.zeros((self.n_pulses, self.n_points))
+        pulse2_a = np.zeros((self.n_pulses, self.n_points))
+        # take pulse data
+        for i in np.arange(self.n_pulses):
+            pulse1_p[i, :] = np.random.random_sample(self.n_points)
+            pulse1_a[i, :] = np.random.random_sample(self.n_points) + 10
+            pulse2_p[i, :] = np.random.random_sample(self.n_points)
+            pulse2_a[i, :] = np.random.random_sample(self.n_points) + 10
+            data = {"t": np.arange(self.n_points),
+                    "phase 1": pulse1_p[i, :],
+                    "amplitude 1": pulse1_a[i, :],
+                    "phase 2": pulse2_p[i, :],
+                    "amplitude 2": pulse2_a[i, :]}
+            if i % 10 == 0:
+                self.emit("results", data, clear=True)
+            self.emit('progress', i / self.n_pulses * 100)
             log.debug("Emitting results: %s" % data)
-            sleep(self.wait_time)
             if self.should_stop():
                 log.warning("Caught the stop flag in the procedure")
                 return
+            sleep(np.random.random_sample() * self.wait_time)
 
         if self.noise[0]:
-            # calculate bias point
-            bias_i1, bias_q1 = 70 / self.attenuation, 0
-            bias_i2, bias_q2 = 0, 70 / self.attenuation
-
-            self.emit("results", {"bias I1": bias_i1, "bias Q1": bias_q1})
-            self.emit("results", {"bias I2": bias_i2, "bias Q2": bias_q2})
             # take noise data
             frequency = np.linspace(1e3, 1e5, 100)
             phase = 1 / frequency
             amplitude = 1 / frequency[-1] * np.ones(frequency.shape)
             data = {"frequency": frequency,
-                    "Phase PSD1": phase,
-                    "Amplitude PSD1": amplitude,
-                    "Phase PSD2": phase / 2,
-                    "Amplitude PSD2": amplitude * 2}
+                    "phase PSD1": phase,
+                    "amplitude PSD1": amplitude,
+                    "phase PSD2": phase / 2,
+                    "amplitude PSD2": amplitude * 2}
             self.emit("results", data)
         else:
             frequency = np.nan
             phase = np.nan
             amplitude = np.nan
-            bias_i1 = np.nan
-            bias_i2 = np.nan
-            bias_q1 = np.nan
-            bias_q2 = np.nan
 
         # save all the data we took
-        data = {"I1": loop_x,
-                "Q1": loop_y,
-                "I2": loop_x * 2,
-                "Q2": loop_y,
+        data = {"phase 1": pulse1_p,
+                "amplitude 1": pulse1_a,
+                "phase 2": pulse2_p,
+                "amplitude 2": pulse2_a,
                 "frequency": frequency,
-                "Phase PSD1": phase,
-                "Amplitude PSD1": amplitude,
-                "Phase PSD2": phase / 2,
-                "Amplitude PSD2": amplitude * 2,
-                "bias I1": bias_i1,
-                "bias Q1": bias_q1,
-                "bias I2": bias_i2,
-                "bias Q2": bias_q2}
+                "phase PSD1": phase,
+                "amplitude PSD1": amplitude,
+                "phase PSD2": phase / 2,
+                "amplitude PSD2": amplitude * 2}
         self.save(data)
 
     def shutdown(self):
