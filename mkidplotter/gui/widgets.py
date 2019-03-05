@@ -319,16 +319,20 @@ class InputsWidget(widgets.InputsWidget):
         vbox.setSpacing(6)
         inputs = list(self._inputs)
 
-        for name in inputs:
+        remove_indices = []
+        for ind, name in enumerate(inputs):
             if isinstance(getattr(self, name), (FileInput, DirectoryInput)):
-                inputs.remove(name)
+                remove_indices.append(ind)
                 self._add_widget(name, vbox)
+        inputs = [inputs[ind] for ind in range(len(inputs)) if ind not in remove_indices]
 
-        for name in inputs:
+        remove_indices = []
+        for ind, name in enumerate(inputs):
             if isinstance(getattr(self, name), NoiseInput):
                 continue
-            inputs.remove(name)
+            remove_indices.append(ind)
             self._add_widget(name, vbox)
+        inputs = [inputs[ind] for ind in range(len(inputs)) if ind not in remove_indices]
 
         for name in inputs:
             self._add_widget(name, vbox)
