@@ -155,7 +155,7 @@ class ManagedWindow(w.ManagedWindow):
         # set the central widget and show
         self.setCentralWidget(self.main)
         self.main.show()
-        self.resize(1400, 800)
+        self.resize(1400, 1000)
 
     def browser_item_changed(self, item, column):
         if column == 0:
@@ -442,6 +442,8 @@ class SweepGUI(ManagedWindow):
         self.setWindowIcon(get_image_icon("loop.png"))
 
         directory = os.path.join(os.path.dirname(__file__), "user_data")
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
         file_path = os.path.join(directory, "sweep_default.npz")
         if os.path.isfile(file_path):
             self.set_config(file_path)
@@ -493,6 +495,7 @@ class SweepGUI(ManagedWindow):
             self.set_config(file_name)
 
     def set_config(self, file_name):
+        log.info("loading configuration from {}".format(file_name))
         npz_file = np.load(file_name)
         # set sweep parameters
         sweep_dict = npz_file['sweep_dict'].item()
@@ -508,7 +511,7 @@ class SweepGUI(ManagedWindow):
         ignore_parameters += [param for params in self.frequency_inputs
                               for param in params]
         for key, value in parameter_dict[files[0]].items():
-            if key not in ignore_parameters:
+            if key not in ignore_parameters and key in parameters.keys():
                 parameters[key].value = value
         self.inputs.set_parameters(parameters)
 
@@ -520,6 +523,7 @@ class SweepGUI(ManagedWindow):
         parameter_dict = {"default": parameter_values}
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         file_path = os.path.join(directory, "sweep_default.npz")
+        log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, sweep_dict, parameter_dict)
 
     def queue(self):
