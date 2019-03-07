@@ -130,7 +130,7 @@ class MKIDProcedure(Procedure):
         for name in dir(self):
             if name in self._parameters.keys():
                 value = getattr(self, name)
-                log.info("Parameter {}: {}".format(name, value))
+                log.debug("Parameter {}: {}".format(name, value))
                 self.metadata['parameters'][name] = value
         # save some data from the current state of the daq sensors
         if callable(getattr(self.daq, "system_state", None)):
