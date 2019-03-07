@@ -35,8 +35,7 @@ def wait_signal(signal, timeout=10000):
         QtCore.QTimer.singleShot(timeout, loop.quit)
     loop.exec_()
 
-    
-# TODO: fix: add some api for handling memory errors (no clue what this looks like)
+
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(),
                  y_labels=(), legend_text=(), plot_widget_classes=(), plot_names=(),
