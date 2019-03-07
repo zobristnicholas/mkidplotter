@@ -394,10 +394,26 @@ class ManagedWindow(w.ManagedWindow):
             self.browser.resizeColumnToContents(index)
 
     def closeEvent(self, event):
+        if self.manager.is_running() or self.manager.experiments.has_next():
+            reply = QtGui.QMessageBox.question(self, 'Close Window',
+                                               "Are you sure you want to exit with procedures still running?",
+                                               QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.No:
+                event.ignore()
+                return
+            self.abort_all()
+            wait = True
+            while wait:
+                aborted = []
+                for experiment in self.manager.experiments.queue:
+                    aborted.append(experiment.procedure.status == self.procedure_class.ABORTED)
+                if len(aborted) == 0 or all(aborted):
+                    wait = False
         try:
             self.procedure_class.close()
         except AttributeError:
             pass
+        event.accept()
 
 
 class SweepGUI(ManagedWindow):
