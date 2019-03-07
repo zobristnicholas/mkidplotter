@@ -5,6 +5,7 @@ import tempfile
 import numpy as np
 from cycler import cycler
 from datetime import datetime
+from contextlib import contextmanager
 import pymeasure.display.windows as w
 from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
@@ -22,6 +23,19 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
+@contextmanager
+def wait_signal(signal, timeout=10000):
+    """Block loop until signal emitted, or timeout (ms) elapses."""
+    loop = QtCore.QEventLoop()
+    signal.connect(loop.quit)
+
+    yield
+
+    if timeout is not None:
+        QtCore.QTimer.singleShot(timeout, loop.quit)
+    loop.exec_()
+
+    
 # TODO: fix: add some api for handling memory errors (no clue what this looks like)
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(),
@@ -30,6 +44,7 @@ class ManagedWindow(w.ManagedWindow):
         if not inputs:
             inputs = tuple(procedure_class().parameter_names)
 
+        self.closing = False  # closeEvent() called twice on Mac
         self._abort_state = "abort"
         self._abort_all = False
         self.plot_widget_classes = plot_widget_classes
@@ -394,6 +409,11 @@ class ManagedWindow(w.ManagedWindow):
             self.browser.resizeColumnToContents(index)
 
     def closeEvent(self, event):
+        # check if we already called closeEvent
+        if self.closing:
+            event.accept()
+            return
+        # check if things are running
         if self.manager.is_running() or self.manager.experiments.has_next():
             reply = QtGui.QMessageBox.question(self, 'Close Window',
                                                "Are you sure you want to exit with procedures still running?",
@@ -401,18 +421,17 @@ class ManagedWindow(w.ManagedWindow):
             if reply == QtGui.QMessageBox.No:
                 event.ignore()
                 return
-            self.abort_all()
-            wait = True
-            while wait:
-                aborted = []
-                for experiment in self.manager.experiments.queue:
-                    aborted.append(experiment.procedure.status == self.procedure_class.ABORTED)
-                if len(aborted) == 0 or all(aborted):
-                    wait = False
+            # abort all the experiments
+            while self.manager.experiments.has_next():
+                with wait_signal(self.manager.abort_returned):
+                    self.abort()
+                self.resume()
+        # try to close the DAC
         try:
             self.procedure_class.close()
         except AttributeError:
             pass
+        self.closing = True
         event.accept()
 
 
