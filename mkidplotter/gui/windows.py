@@ -36,6 +36,7 @@ def wait_signal(signal, timeout=10000):
     loop.exec_()
 
 
+# TODO: fix memory leak
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(),
                  y_labels=(), legend_text=(), plot_widget_classes=(), plot_names=(),
