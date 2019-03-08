@@ -185,6 +185,14 @@ class ManagedWindow(w.ManagedWindow):
                     for curve in experiment.curve[index]:
                         curve.update()
                         plot.addItem(curve)
+        # remove loaded data from memory for all but the last 25 finished experiments in the queue
+        # needed because of insanely small memory limit on 32 bit systems
+        n_finished = 0
+        for experiment in reversed(self.manager.experiments):
+            if experiment.procedure.status == self.procedure_class.FINISHED:
+                n_finished += 1
+                if n_finished > 25:
+                    experiment.results._data = None
 
     def new_curve(self, results, **kwargs):
         curve = [plot_widget.new_curve(results, **kwargs)
@@ -579,7 +587,7 @@ class SweepGUI(ManagedWindow):
         start_time = datetime.now().strftime("%y%m%d_%H%M%S")
         files = []
         previous_files = []
-        for experiment in self.manager.experiments.queue:
+        for experiment in self.manager.experiments:
             file_path = os.path.join(experiment.procedure.directory,
                                      experiment.browser_item.text(1))
             previous_files.append(file_path)
