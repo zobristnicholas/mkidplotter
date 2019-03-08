@@ -173,25 +173,34 @@ class ManagedWindow(w.ManagedWindow):
         self.resize(1400, 1000)
 
     def browser_item_changed(self, item, column):
+        # remove excess loaded data from memory on browser change for finished experiments
+        # needed because of memory limit on 32 bit systems and memory intensive procedures
+        n_loaded = 0
+        for experiment in self.manager.experiments:
+            if experiment.procedure.status == self.procedure_class.FINISHED and experiment.results._data is not None:
+                n_loaded += 1
+        # check box logic
         if column == 0:
             state = item.checkState(0)
             experiment = self.manager.experiments.with_browser_item(item)
+            # remove plot on uncheck
             if state == 0:
                 for index, plot in enumerate(self.plot):
                     for curve in experiment.curve[index]:
                         plot.removeItem(curve)
+                # remove data on uncheck if n_loaded is getting large
+                if n_loaded > 20 and experiment.results._data is not None:
+                    log.debug("Removing {} from gui memory".format(experiment.data_filename))
+                    experiment.results._data = None
+            # add plot on check
             else:
                 for index, plot in enumerate(self.plot):
                     for curve in experiment.curve[index]:
                         curve.update()
                         plot.addItem(curve)
-        # remove loaded data from memory for all but the last 25 finished experiments in the queue
-        # needed because of insanely small memory limit on 32 bit systems
-        n_finished = 0
-        for experiment in reversed(self.manager.experiments):
-            if experiment.procedure.status == self.procedure_class.FINISHED:
-                n_finished += 1
-                if n_finished > 25:
+                # remove data right after plotting if n_loaded is high enough
+                if n_loaded > 30 and experiment.results._data is not None:
+                    log.debug("Removing {} from gui memory".format(experiment.data_filename))
                     experiment.results._data = None
 
     def new_curve(self, results, **kwargs):
