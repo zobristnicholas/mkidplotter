@@ -441,6 +441,8 @@ class ManagedWindow(w.ManagedWindow):
             # abort all the experiments
             while self.manager.experiments.has_next():
                 with wait_signal(self.manager.abort_returned):
+                    if not self.manager.is_running():
+                        self.resume()
                     self.abort()
                 self.resume()
         # try to close the DAC
