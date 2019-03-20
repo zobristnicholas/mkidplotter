@@ -45,7 +45,7 @@ class Pulse(MKIDProcedure):
                     "phase 2": pulse2_p[i, :],
                     "amplitude 2": pulse2_a[i, :]}
             if i % 10 == 0:
-                self.emit("results", data, clear=True)
+                self.emit("results", data, clear=True)  # clear last pulse from gui file
             self.emit('progress', i / self.n_pulses * 100)
             log.debug("Emitting results: %s" % data)
             if self.should_stop():
@@ -63,7 +63,7 @@ class Pulse(MKIDProcedure):
                     "amplitude PSD1": amplitude,
                     "phase PSD2": phase / 2,
                     "amplitude PSD2": amplitude * 2}
-            self.emit("results", data)
+            self.emit("results", data)  # don't clear last pulse
         else:
             frequency = np.nan
             phase = np.nan

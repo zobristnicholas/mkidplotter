@@ -113,7 +113,11 @@ class MKIDProcedure(Procedure):
     def should_stop(self):
         """Stops should_stop() from being required to be patched by a worker."""
         pass
-        
+
+    def refresh_plot(self):
+        """Stops refresh_plot() from being required to be patched by a worker."""
+        pass
+
     def _parameter_names(self):
         """Provides an ordered list of parameter names before base class init."""
         parameters = []

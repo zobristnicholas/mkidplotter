@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import pymeasure.experiment.workers as w
 
+from mkidplotter.gui.results import ContinuousResults
+
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
@@ -21,8 +23,7 @@ class Worker(w.Worker):
             # collect the data into a numpy structured array
             size = max([value.size if hasattr(value, "shape") and value.shape
                         else np.array([value]).size for value in record.values()])
-            records = np.empty((size,), dtype=[(key, float)
-                                               for key in self.procedure.DATA_COLUMNS])
+            records = np.empty((size,), dtype=[(key, float) for key in self.procedure.DATA_COLUMNS])
             records.fill(np.nan)
             for key, value in record.items():
                 try:
@@ -36,5 +37,7 @@ class Worker(w.Worker):
             # send the data to the file
             for index in range(size):
                 self.recorder.handle(records[index])
+            if isinstance(self.results, ContinuousResults):
+                self.results.refresh = True
         else:
             self.monitor_queue.put((topic, record))
