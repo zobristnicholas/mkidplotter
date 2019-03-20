@@ -17,7 +17,7 @@ from mkidplotter.gui.procedures import SweepGUIProcedure
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.results import Results, ContinuousResults
 from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
-                                     BrowserWidget, ResultsDialog)
+                                     BrowserWidget, ResultsDialog, IndicatorsWidget)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -93,8 +93,7 @@ class ManagedWindow(w.ManagedWindow):
 
         measured_quantities = [item for x_axis in self.x_axes for item in x_axis]
         measured_quantities.extend([item for y_axis in self.x_axes for item in y_axis])
-        self.browser_widget = BrowserWidget(self.procedure_class, self.displays,
-                                            measured_quantities, parent=self)
+        self.browser_widget = BrowserWidget(self.procedure_class, self.displays, measured_quantities, parent=self)
         self.browser_widget.show_button.clicked.connect(self.show_experiments)
         self.browser_widget.hide_button.clicked.connect(self.hide_experiments)
         self.browser_widget.clear_button.clicked.connect(self.clear_experiments)
@@ -105,16 +104,16 @@ class ManagedWindow(w.ManagedWindow):
         self.browser.customContextMenuRequested.connect(self.browser_item_menu)
         self.browser.itemChanged.connect(self.browser_item_changed)
 
-        self.inputs = InputsWidget(self.procedure_class, self.inputs,
-                                   parent=self)
-        self.manager = Manager(self.plot, self.browser,
-                               log_level=self.log_level, parent=self)
+        self.inputs = InputsWidget(self.procedure_class, self.inputs, parent=self)
+        self.manager = Manager(self.plot, self.browser, log_level=self.log_level, parent=self)
         self.manager.abort_returned.connect(self.abort_returned)
         self.manager.queued.connect(self.queued)
         self.manager.running.connect(self.running)
         self.manager.finished.connect(self.finished)
         self.manager.failed.connect(self.failed)
         self.manager.log.connect(self.log.handle)
+
+        self.indicators = IndicatorsWidget(self.procedure_class)
 
     def _layout(self):
         # main window widget
@@ -142,6 +141,14 @@ class ManagedWindow(w.ManagedWindow):
         features = dock.features()
         dock.setFeatures(features & ~QtGui.QDockWidget.DockWidgetClosable)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+
+        # make indicators dock widget on the left
+        if self.indicators.inputs:
+            indicator_dock_widget = QtGui.QDockWidget('Indicators')
+            indicator_dock_widget.setWidget(self.indicators)
+            features = indicator_dock_widget.features()
+            indicator_dock_widget.setFeatures(features & ~QtGui.QDockWidget.DockWidgetClosable)
+            self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, indicator_dock_widget)
 
         # make the browser dock widget
         browser_dock = QtGui.QWidget(self)

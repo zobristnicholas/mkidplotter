@@ -3,8 +3,8 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from mkidplotter import NoiseInput, MKIDProcedure, Results, DirectoryParameter
-from pymeasure.experiment import IntegerParameter, FloatParameter, VectorParameter
+from mkidplotter import (NoiseInput, MKIDProcedure, Results, DirectoryParameter, IntegerParameter, FloatParameter,
+                         VectorParameter)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())

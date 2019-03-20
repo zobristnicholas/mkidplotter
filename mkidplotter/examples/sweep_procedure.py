@@ -3,8 +3,8 @@ import logging
 import tempfile
 import numpy as np
 from time import sleep
-from mkidplotter import NoiseInput, SweepBaseProcedure, Results
-from pymeasure.experiment import IntegerParameter, FloatParameter, VectorParameter
+from mkidplotter import (NoiseInput, SweepBaseProcedure, Results, IntegerParameter, FloatParameter, VectorParameter,
+                         IntegerIndicator, FloatIndicator)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -18,6 +18,8 @@ class Sweep(SweepBaseProcedure):
     noise = VectorParameter("Noise", length=6, default=[1, 1, 10, 1, -1, 10],
                             ui_class=NoiseInput)
     n_points = IntegerParameter("Number of Points", default=500)
+    index_counter = IntegerIndicator("Index")
+    random_float = FloatIndicator("Random Float", precision=4)
 
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
                     'I2', 'Q2', "bias I2", "bias Q2", 'Amplitude PSD2', 'Phase PSD2',
@@ -44,6 +46,10 @@ class Sweep(SweepBaseProcedure):
                     "Q1": loop_y[i],
                     "I2": loop_x[i] * 2,
                     "Q2": loop_y[i]}
+            # send indicator values every 100 indexes
+            if not i % 100:
+                self.index_counter.value = i
+                self.random_float.value = np.random.rand() * 10000
             self.emit("results", data)
             log.debug("Emitting results: %s" % data)
             sleep(self.wait_time)

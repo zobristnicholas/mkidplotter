@@ -19,6 +19,8 @@ from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInpu
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
 from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput,
                                     NoiseInput)
+from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
+from mkidplotter.gui.displays import StringDisplay
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -230,9 +232,6 @@ class TransmissionPlotWidget(SweepPlotWidget):
 
 class PulsePlotWidget(TransmissionPlotWidget):
     pass
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, refresh_time=1, **kwargs)
-    # TODO: don't want constant updating but don't want to update in the middle of emit()
 
 
 class NoisePlotWidget(PlotWidget):
@@ -261,6 +260,54 @@ class NoisePlotWidget(PlotWidget):
         super().__init__(*args, **kwargs)
         self.plot.setLogMode(True, True)
         self.curve_class = NoiseResultsCurve
+
+
+class IndicatorsWidget(QtGui.QWidget):
+    NO_LABEL_INPUTS = ()
+
+    def __init__(self, procedure_class, parent=None):
+        super().__init__(parent)
+        self._procedure_class = procedure_class
+        self._procedure = procedure_class()
+        self.inputs = []
+        self._setup_ui()
+        self._layout()
+
+    def _setup_ui(self):
+        for name, indicator in self._procedure.indicator_objects.items():
+            self._make_input(name, indicator)
+
+    def _make_input(self, name, indicator):
+        if indicator.ui_class is not None:
+            element = parameter.ui_class
+
+        elif isinstance(indicator, (FloatIndicator, IntegerIndicator)):
+            element = StringDisplay(indicator)
+
+        elif isinstance(indicator, BooleanIndicator):
+            raise NotImplementedError
+
+        else:
+            raise ValueError("unrecognized indicator type: {}".format(type(parameter)))
+        self.inputs.append(name)
+        setattr(self, name, element)
+
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+        inputs = list(self._procedure.indicator_objects.keys())
+        for name in inputs:
+            self._add_widget(name, vbox)
+        self.setLayout(vbox)
+
+    def _add_widget(self, name, vbox):
+        indicators = self._procedure.indicator_objects
+        widget = getattr(self, name)
+        if not isinstance(widget, self.NO_LABEL_INPUTS):
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % indicators[name].name)
+            vbox.addWidget(label)
+        vbox.addWidget(widget)
 
 
 class InputsWidget(widgets.InputsWidget):
@@ -310,8 +357,7 @@ class InputsWidget(widgets.InputsWidget):
             element = StringInput(parameter)
 
         else:
-            raise ValueError("unrecognized parameter type: {}"
-                             .format(type(parameter)))
+            raise ValueError("unrecognized parameter type: {}".format(type(parameter)))
 
         setattr(self, name, element)
 

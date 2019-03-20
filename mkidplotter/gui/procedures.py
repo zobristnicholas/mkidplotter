@@ -4,6 +4,7 @@ from datetime import datetime
 from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter)
 
+from mkidplotter.gui.indicators import Indicator
 from mkidplotter.gui.parameters import DirectoryParameter, TextEditParameter
 
 log = logging.getLogger(__name__)
@@ -80,6 +81,17 @@ class MKIDProcedure(Procedure):
         self._file_name = None
         self.metadata = {"parameters": {}}
         super().__init__(*args, **kwargs)
+        self.indicator_objects = {}
+        self._update_indicators()
+
+    def _update_indicators(self):
+        """ Collects all the Indicator objects for the procedure and stores
+        them in a meta dictionary so that they are accessible.
+        """
+        for item in dir(self):
+            indicator = getattr(self, item)
+            if isinstance(indicator, Indicator):
+                self.indicator_objects[item] = indicator
 
     def file_name(self, prefix="", numbers=(), time=None):
         """Returns a unique name for saving the file"""
