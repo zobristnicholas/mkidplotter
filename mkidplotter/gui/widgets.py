@@ -7,7 +7,7 @@ from cycler import cycler
 from pymeasure.experiment import Results
 import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
-from pyqtgraph.graphicsItems.LegendItem import ItemSample
+import pyqtgraph.graphicsItems.LegendItem as li
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
 from mkidplotter.gui.parameters import (FileParameter, DirectoryParameter,
                                         TextEditParameter)
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class MKIDResultsDialog(widgets.ResultsDialog):
+class ResultsDialog(widgets.ResultsDialog):
     def __init__(self, *args, procedure_class=None, x_axes=None, y_axes=None,
                  x_labels=None, y_labels=None, legend_text=None, plot_widget_classes=None,
                  plot_names=None, color_cycle=None, **kwargs):
@@ -107,7 +107,7 @@ class MKIDResultsDialog(widgets.ResultsDialog):
             self.preview_param.sortItems(0, QtCore.Qt.AscendingOrder)
 
 
-class MKIDBrowserWidget(widgets.BrowserWidget):
+class BrowserWidget(widgets.BrowserWidget):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(0)
@@ -127,7 +127,7 @@ class MKIDBrowserWidget(widgets.BrowserWidget):
         self.setLayout(vbox)
 
 
-class MKIDPlotWidget(widgets.PlotWidget):
+class PlotWidget(widgets.PlotWidget):
     """Base class for all plot widgets. Only determines the user interface and layout."""
     def _setup_ui(self):
         self.columns_x = QtGui.QComboBox(self)
@@ -159,7 +159,7 @@ class MKIDPlotWidget(widgets.PlotWidget):
             self.legend = self.plot_frame.plot_widget.addLegend(offset=(-1, 1))
             for text in self.legend_text:
                 legend_item = pg.PlotDataItem(**copy_options(next(style_cycle)))
-                legend_item_sample = MKIDItemSample(legend_item)
+                legend_item_sample = ItemSample(legend_item)
                 self.legend.addItem(legend_item_sample, text)
         # Set the results curve class
         self.curve_class = MKIDResultsCurve
@@ -191,7 +191,7 @@ class MKIDPlotWidget(widgets.PlotWidget):
         return curve
 
 
-class SweepPlotWidget(MKIDPlotWidget):
+class SweepPlotWidget(PlotWidget):
     """Plot widget for an IQ sweep"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
                  y_label=None, legend_text=None, **kwargs):
@@ -234,7 +234,8 @@ class PulsePlotWidget(TransmissionPlotWidget):
     #     super().__init__(*args, refresh_time=1, **kwargs)
     # TODO: don't want constant updating but don't want to update in the middle of emit()
 
-class NoisePlotWidget(MKIDPlotWidget):
+
+class NoisePlotWidget(PlotWidget):
     """Plot widget for noise"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
                  y_label=None, legend_text=None, **kwargs):
@@ -348,7 +349,7 @@ class InputsWidget(widgets.InputsWidget):
         vbox.addWidget(widget)
 
 
-class MKIDInputsWidget(InputsWidget):
+class SweepInputsWidget(InputsWidget):
     def _setup_ui(self):
         parameter_objects = self._procedure.parameter_objects()
         self._make_input(self._inputs["directory_inputs"],
@@ -410,7 +411,7 @@ class MKIDInputsWidget(InputsWidget):
         self._inputs = directory_inputs + frequency_inputs + sweep_inputs
 
 
-class MKIDItemSample(ItemSample):
+class ItemSample(li.ItemSample):
     """ Subclassed Legend ItemSample that draws a better legend then the default"""
     def __init__(self, item):
         self.line = [0, 20, 30, 0]

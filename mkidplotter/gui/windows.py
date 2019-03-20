@@ -16,8 +16,8 @@ from mkidplotter.gui.browser import BrowserItem
 from mkidplotter.gui.procedures import SweepGUIProcedure
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.results import Results, ContinuousResults
-from mkidplotter.gui.widgets import (SweepPlotWidget, MKIDInputsWidget, InputsWidget,
-                                     MKIDBrowserWidget, MKIDResultsDialog)
+from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
+                                     BrowserWidget, ResultsDialog)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -93,8 +93,8 @@ class ManagedWindow(w.ManagedWindow):
 
         measured_quantities = [item for x_axis in self.x_axes for item in x_axis]
         measured_quantities.extend([item for y_axis in self.x_axes for item in y_axis])
-        self.browser_widget = MKIDBrowserWidget(self.procedure_class, self.displays,
-                                                measured_quantities, parent=self)
+        self.browser_widget = BrowserWidget(self.procedure_class, self.displays,
+                                            measured_quantities, parent=self)
         self.browser_widget.show_button.clicked.connect(self.show_experiments)
         self.browser_widget.hide_button.clicked.connect(self.hide_experiments)
         self.browser_widget.clear_button.clicked.connect(self.clear_experiments)
@@ -380,14 +380,14 @@ class ManagedWindow(w.ManagedWindow):
             self.manager.clear()
 
     def open_experiment(self):
-        dialog = MKIDResultsDialog(self.procedure_class.DATA_COLUMNS,
-                                   procedure_class=self.procedure_class,
-                                   x_axes=self.x_axes, y_axes=self.y_axes,
-                                   x_labels=self.x_labels, y_labels=self.y_labels,
-                                   legend_text=self.legend_text,
-                                   plot_widget_classes=self.plot_widget_classes,
-                                   plot_names=self.plot_names,
-                                   color_cycle=self.color_cycle)
+        dialog = ResultsDialog(self.procedure_class.DATA_COLUMNS,
+                               procedure_class=self.procedure_class,
+                               x_axes=self.x_axes, y_axes=self.y_axes,
+                               x_labels=self.x_labels, y_labels=self.y_labels,
+                               legend_text=self.legend_text,
+                               plot_widget_classes=self.plot_widget_classes,
+                               plot_names=self.plot_names,
+                               color_cycle=self.color_cycle)
         if dialog.exec_():
             file_names = dialog.selectedFiles()
             self.load_from_file(file_names)
@@ -503,8 +503,7 @@ class SweepGUI(ManagedWindow):
             self.set_config(file_path)
 
     def _setup_ui(self):
-        self.base_inputs_widget = MKIDInputsWidget(self.base_procedure_class,
-                                                   self.ordering, parent=self)
+        self.base_inputs_widget = SweepInputsWidget(self.base_procedure_class, self.ordering, parent=self)
 
         load_configuration = QtGui.QAction("Load Configuration", self)
         load_configuration.triggered.connect(self.load_config)

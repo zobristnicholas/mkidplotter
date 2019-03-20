@@ -66,8 +66,7 @@ class ContinuousResults(Results):
     def data(self):
         # Need to update header count for correct referencing
         if self._header_count == -1:
-            self._header_count = len(
-                self.header()[-1].split(Results.LINE_BREAK))
+            self._header_count = len(self.header()[-1].split(Results.LINE_BREAK))
         chunks = pd.read_csv(self.data_filename, comment=Results.COMMENT,
                              header=0, names=self.procedure.DATA_COLUMNS,
                              chunksize=Results.CHUNK_SIZE, skiprows=self._header_count,

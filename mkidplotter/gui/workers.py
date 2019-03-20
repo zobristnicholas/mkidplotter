@@ -36,5 +36,5 @@ class Worker(w.Worker):
             # send the data to the file
             for index in range(size):
                 self.recorder.handle(records[index])
-        elif topic == 'status' or topic == 'progress':
+        else:
             self.monitor_queue.put((topic, record))
