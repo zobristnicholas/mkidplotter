@@ -273,7 +273,12 @@ class TimePlotWidget(QtGui.QFrame):
     """Plot widget for plotting data over a long time. Intended for use as a persistent indicator."""
     def __init__(self, get_data, title='', refresh_time=60, max_length=1440, **kwargs):
         super().__init__(**kwargs)
+        self.setAutoFillBackground(False)
         self.setStyleSheet("background: #fff")
+        self.setFrameShape(QtGui.QFrame.StyledPanel)
+        self.setFrameShadow(QtGui.QFrame.Sunken)
+        self.setMidLineWidth(1)
+
         self.data_x = deque(maxlen=max_length)
         self.data_y = deque(maxlen=max_length)
         self.get_data = get_data
@@ -283,7 +288,6 @@ class TimePlotWidget(QtGui.QFrame):
         self.coordinates.setStyleSheet("background: #fff")
         self.coordinates.setText("")
         self.coordinates.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
-
         self.plot_widget = pg.PlotWidget(background='w', title=title,
                                          axisItems={'bottom': TimeAxisItem(orientation='bottom')}, **kwargs)
         self.plot = self.plot_widget.getPlotItem()
@@ -306,7 +310,10 @@ class TimePlotWidget(QtGui.QFrame):
         self.curve.setData(x=list(self.data_x), y=list(self.data_y))
 
     def update_coordinates(self, x, y):
-        self.coordinates.setText("(%s, %g)" % (datetime.fromtimestamp(x).strftime("%H:%M:%S"), y))
+        try:
+            self.coordinates.setText("(%s, %g)" % (datetime.fromtimestamp(x).strftime("%H:%M:%S"), y))
+        except OSError:
+            pass
 
     def sizeHint(self):
         return QtCore.QSize(0, 300)
