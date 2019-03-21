@@ -7,7 +7,7 @@ log.addHandler(logging.NullHandler())
 
 
 def natural_sort(text):
-    regex = '(\d*\.\d+|\d+)'
+    regex = r'(\d*\.\d+|\d+)'
     parts = re.split(regex, text)
     return tuple((e if i % 2 == 0 else float(e)) for i, e in enumerate(parts))
 

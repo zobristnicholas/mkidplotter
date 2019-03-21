@@ -6,7 +6,7 @@ from mkidplotter.gui.parameters import (DirectoryParameter, FileParameter,
                                         TextEditParameter)
 from mkidplotter.gui.indicators import IntegerIndicator, FloatIndicator, BooleanIndicator
 from mkidplotter.gui.widgets import (SweepPlotWidget, TransmissionPlotWidget,
-                                     NoisePlotWidget, PulsePlotWidget)
+                                     NoisePlotWidget, PulsePlotWidget, TimePlotWidget)
 from mkidplotter.gui.procedures import (SweepGUIProcedure, SweepGUIProcedure2,
                                         SweepBaseProcedure, MKIDProcedure)
 from mkidplotter.icons.manage_icons import get_image_icon

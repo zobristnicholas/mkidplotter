@@ -38,9 +38,8 @@ def wait_signal(signal, timeout=10000):
 
 # TODO: fix memory leak
 class ManagedWindow(w.ManagedWindow):
-    def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(),
-                 y_labels=(), legend_text=(), plot_widget_classes=(), plot_names=(),
-                 **kwargs):
+    def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
+                 plot_widget_classes=(), plot_names=(), persistent_indicators=(), **kwargs):
         if not inputs:
             inputs = tuple(procedure_class().parameter_names)
 
@@ -54,13 +53,16 @@ class ManagedWindow(w.ManagedWindow):
         self.x_labels = x_labels
         self.y_labels = y_labels
         self.legend_text = legend_text
+        if isinstance(persistent_indicators, (tuple, list)):
+            self.persistent_indicators = persistent_indicators
+        else:
+            self.persistent_indicators = [persistent_indicators]
+
         # matplotlib 2.2.3 default colors
-        self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44),
-                                         (214, 39, 40), (148, 103, 189), (140, 86, 75),
-                                         (227, 119, 194), (127, 127, 127), (188, 189, 34),
-                                         (23, 190, 207)])
-        super().__init__(procedure_class, inputs=inputs, x_axis=x_axes[0][0],
-                         y_axis=y_axes[0][0], **kwargs)
+        self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44), (214, 39, 40),
+                                         (148, 103, 189), (140, 86, 75), (227, 119, 194), (127, 127, 127),
+                                         (188, 189, 34), (23, 190, 207)])
+        super().__init__(procedure_class, inputs=inputs, x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
         self.update_browser_column_width()
 
     def _setup_ui(self):
@@ -143,9 +145,16 @@ class ManagedWindow(w.ManagedWindow):
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
 
         # make indicators dock widget on the left
-        if self.indicators.inputs:
+        if self.indicators.inputs or self.persistent_indicators:
+            indicator_dock = QtGui.QWidget(self)
+            indicator_vbox = QtGui.QVBoxLayout()
+            if self.indicators.inputs:
+                indicator_vbox.addWidget(self.indicators)
+            for indicator in self.persistent_indicators:
+                indicator_vbox.addWidget(indicator)
+            indicator_dock.setLayout(indicator_vbox)
             indicator_dock_widget = QtGui.QDockWidget('Indicators')
-            indicator_dock_widget.setWidget(self.indicators)
+            indicator_dock_widget.setWidget(indicator_dock)
             features = indicator_dock_widget.features()
             indicator_dock_widget.setFeatures(features & ~QtGui.QDockWidget.DockWidgetClosable)
             self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, indicator_dock_widget)
@@ -530,7 +539,7 @@ class SweepGUI(ManagedWindow):
         base_dock = QtGui.QWidget(self)
         base_inputs_vbox = QtGui.QVBoxLayout()
         base_inputs_vbox.addWidget(self.base_inputs_widget)
-        base_inputs_vbox.addStretch()
+        base_inputs_vbox.addStretch(0)
         base_dock.setLayout(base_inputs_vbox)
         # add the dock widget to the left
         base_inputs_dock = QtGui.QDockWidget('Sweeps')

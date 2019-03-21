@@ -4,21 +4,20 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from cycler import cycler
+from collections import deque
+from datetime import datetime
+import pyqtgraph.graphicsItems.LegendItem as li
+from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
 from pymeasure.experiment import Results
 import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
-import pyqtgraph.graphicsItems.LegendItem as li
-from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
-from mkidplotter.gui.parameters import (FileParameter, DirectoryParameter,
-                                        TextEditParameter)
-from pymeasure.experiment import (FloatParameter, IntegerParameter, BooleanParameter,
-                                  ListParameter, Parameter)
-from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput,
-                                      ListInput, StringInput)
+from pymeasure.display.curves import Crosshairs
+from pymeasure.display.inputs import ScientificInput, IntegerInput, BooleanInput, ListInput, StringInput
+from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParameter, ListParameter, Parameter
 
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
-from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput,
-                                    NoiseInput)
+from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
+from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput, NoiseInput
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
 from mkidplotter.gui.displays import StringDisplay
 
@@ -127,6 +126,9 @@ class BrowserWidget(widgets.BrowserWidget):
         vbox.addSpacing(10)
         vbox.addWidget(self.browser)
         self.setLayout(vbox)
+
+    def sizeHint(self):
+        return QtCore.QSize(0, 300)
 
 
 class PlotWidget(widgets.PlotWidget):
@@ -260,6 +262,55 @@ class NoisePlotWidget(PlotWidget):
         super().__init__(*args, **kwargs)
         self.plot.setLogMode(True, True)
         self.curve_class = NoiseResultsCurve
+
+
+class TimeAxisItem(pg.AxisItem):
+    def tickStrings(self, values, scale, spacing):
+        return [datetime.fromtimestamp(value).strftime("%H:%M:%S") for value in values]
+
+
+class TimePlotWidget(QtGui.QFrame):
+    """Plot widget for plotting data over a long time. Intended for use as a persistent indicator."""
+    def __init__(self, get_data, title='', refresh_time=60, max_length=1440, **kwargs):
+        super().__init__(**kwargs)
+        # TODO: log results to log file automatically and save the log file at the end of each procedure
+        self.setStyleSheet("background: #fff")
+        self.data_x = deque(maxlen=max_length)
+        self.data_y = deque(maxlen=max_length)
+        self.get_data = get_data
+
+        self.coordinates = QtGui.QLabel(self)
+        self.coordinates.setMinimumSize(QtCore.QSize(0, 20))
+        self.coordinates.setStyleSheet("background: #fff")
+        self.coordinates.setText("")
+        self.coordinates.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+
+        self.plot_widget = pg.PlotWidget(background='w', title=title,
+                                         axisItems={'bottom': TimeAxisItem(orientation='bottom')}, **kwargs)
+        self.plot = self.plot_widget.getPlotItem()
+        self.curve = self.plot.plot(pen='k')
+        self.crosshairs = Crosshairs(self.plot, pen=pg.mkPen(color='#AAAAAA', style=QtCore.Qt.DashLine))
+        self.crosshairs.coordinates.connect(self.update_coordinates)
+
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update)
+        self.timer.start(refresh_time * 1000)
+
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.addWidget(self.plot_widget)
+        vbox.addWidget(self.coordinates)
+        self.setLayout(vbox)
+
+    def update(self):
+        self.data_x.append(datetime.now().timestamp())
+        self.data_y.append(self.get_data())
+        self.curve.setData(x=list(self.data_x), y=list(self.data_y))
+
+    def update_coordinates(self, x, y):
+        self.coordinates.setText("(%s, %g)" % (datetime.fromtimestamp(x).strftime("%H:%M:%S"), y))
+
+    def sizeHint(self):
+        return QtCore.QSize(0, 300)
 
 
 class IndicatorsWidget(QtGui.QWidget):

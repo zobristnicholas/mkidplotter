@@ -1,8 +1,13 @@
 import sys
 from pymeasure.display.Qt import QtGui
 from mkidplotter.examples.sweep_procedure import Sweep
-from mkidplotter import (SweepGUI, SweepGUIProcedure2, SweepPlotWidget, NoisePlotWidget,
+from mkidplotter import (SweepGUI, SweepGUIProcedure2, SweepPlotWidget, NoisePlotWidget, TimePlotWidget,
                          get_image_icon)
+
+
+def temperature():
+    import numpy as np
+    return np.random.rand()
 
 
 def sweep_window():
@@ -15,12 +20,13 @@ def sweep_window():
     legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'),
                    ('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
     widgets_list = (SweepPlotWidget, NoisePlotWidget, SweepPlotWidget, NoisePlotWidget)
+    indicators = TimePlotWidget(temperature, title='temperature', refresh_time=1, max_length=20)
     names_list = ('Channel 1: Sweep', 'Channel 1: Noise',
                   'Channel 2: Sweep', 'Channel 2: Noise')
     w = SweepGUI(Sweep, base_procedure_class=SweepGUIProcedure2, x_axes=x_list,
                  y_axes=y_list, x_labels=x_label, y_labels=y_label,
                  legend_text=legend_list, plot_widget_classes=widgets_list,
-                 plot_names=names_list)
+                 plot_names=names_list, persistent_indicators=indicators)
     return w
 
 
