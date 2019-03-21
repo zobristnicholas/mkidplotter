@@ -1,5 +1,5 @@
+import os
 import logging
-import numpy as np
 from datetime import datetime
 from pymeasure.experiment import Procedure
 from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter)
@@ -164,6 +164,15 @@ class MKIDProcedure(Procedure):
         """Close the DAQ resource."""
         if cls.daq is not None and callable(cls.daq.close):
             cls.daq.close()
+            
+    def setup_procedure_log(self, name='temperature', file_name='temperature.log'):
+        """Set up a log that saves to a file following the procedure directory.
+        All handlers previously in the log are removed."""
+        temperature_log = logging.getLogger(name)
+        temperature_log.handlers = []
+        handler = logging.FileHandler(os.path.join(self.directory, file_name))
+        handler.setFormatter(logging.Formatter('%(asctime)s : %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p'))
+        temperature_log.addHandler(handler)
 
 
 class SweepBaseProcedure(MKIDProcedure):
