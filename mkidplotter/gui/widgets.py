@@ -273,7 +273,6 @@ class TimePlotWidget(QtGui.QFrame):
     """Plot widget for plotting data over a long time. Intended for use as a persistent indicator."""
     def __init__(self, get_data, title='', refresh_time=60, max_length=1440, **kwargs):
         super().__init__(**kwargs)
-        # TODO: log results to log file automatically and save the log file at the end of each procedure
         self.setStyleSheet("background: #fff")
         self.data_x = deque(maxlen=max_length)
         self.data_y = deque(maxlen=max_length)
