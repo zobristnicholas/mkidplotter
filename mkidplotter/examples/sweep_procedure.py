@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 from time import sleep
 from mkidplotter import (NoiseInput, SweepBaseProcedure, Results, IntegerParameter, FloatParameter, VectorParameter,
-                         IntegerIndicator, FloatIndicator)
+                         IntegerIndicator, FloatIndicator, Indicator)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -20,6 +20,7 @@ class Sweep(SweepBaseProcedure):
     n_points = IntegerParameter("Number of Points", default=500)
     index_counter = IntegerIndicator("Index")
     random_float = FloatIndicator("Random Float", precision=4)
+    status_bar = Indicator("Status")
 
     DATA_COLUMNS = ['I1', 'Q1', "bias I1", "bias Q1", 'Amplitude PSD1', 'Phase PSD1',
                     'I2', 'Q2', "bias I2", "bias Q2", 'Amplitude PSD2', 'Phase PSD2',
@@ -36,6 +37,7 @@ class Sweep(SweepBaseProcedure):
         loop_y = np.zeros(self.n_points)
         indices = np.arange(self.n_points)
         # sweep frequencies
+        self.status_bar.value = "Sweeping"
         for i in indices:
             self.emit('progress', i / self.n_points * 100)
             loop_x[i] = 70 / self.attenuation * np.cos(2 * np.pi * i /
@@ -58,6 +60,7 @@ class Sweep(SweepBaseProcedure):
                 return
 
         if self.noise[0]:
+            self.status_bar.value = "Taking noise data"
             # calculate bias point
             bias_i1, bias_q1 = 70 / self.attenuation, 0
             bias_i2, bias_q2 = 0, 70 / self.attenuation

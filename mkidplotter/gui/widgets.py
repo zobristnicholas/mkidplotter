@@ -338,11 +338,11 @@ class IndicatorsWidget(QtGui.QWidget):
         if indicator.ui_class is not None:
             element = parameter.ui_class
 
-        elif isinstance(indicator, (FloatIndicator, IntegerIndicator)):
-            element = StringDisplay(indicator)
-
         elif isinstance(indicator, BooleanIndicator):
             raise NotImplementedError
+
+        elif isinstance(indicator, (FloatIndicator, IntegerIndicator, Indicator)):
+            element = StringDisplay(indicator)
 
         else:
             raise ValueError("unrecognized indicator type: {}".format(type(parameter)))
