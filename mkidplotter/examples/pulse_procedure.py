@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 from time import sleep
 from mkidplotter import (NoiseInput, MKIDProcedure, Results, DirectoryParameter, IntegerParameter, FloatParameter,
-                         VectorParameter)
+                         VectorParameter, BooleanListInput)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -18,6 +18,8 @@ class Pulse(MKIDProcedure):
     noise = VectorParameter("Noise", default=[1, 1, 10], ui_class=NoiseInput)
     n_points = IntegerParameter("Number of Points", default=500)
     n_pulses = IntegerParameter("Number of Pulses", default=100)
+    ui = BooleanListInput.set_labels(["808 nm", "920 nm", "980 nm", "1120 nm", "1310 nm"])  # class factory
+    laser = VectorParameter("Laser", default=[0, 0, 0, 0, 0], length=5, ui_class=ui)
 
     DATA_COLUMNS = ['t', 'phase 1', 'amplitude 1', 'phase 2', 'amplitude 2', 'frequency',
                     'phase PSD1', 'amplitude PSD1', 'phase PSD2', 'amplitude PSD2']

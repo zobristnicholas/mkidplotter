@@ -17,7 +17,7 @@ from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParame
 
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
-from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput, NoiseInput
+from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
 from mkidplotter.gui.displays import StringDisplay
 
@@ -432,7 +432,7 @@ class InputsWidget(widgets.InputsWidget):
 
         remove_indices = []
         for ind, name in enumerate(inputs):
-            if isinstance(getattr(self, name), NoiseInput):
+            if isinstance(getattr(self, name), (NoiseInput, BooleanListInput)):
                 continue
             remove_indices.append(ind)
             self._add_widget(name, vbox)

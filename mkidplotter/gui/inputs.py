@@ -192,3 +192,52 @@ class NoiseInput(QtGui.QFrame, Input):
         else:
             self.offset.setDisabled(True)
             self.n_off.setDisabled(True)
+
+
+class BooleanListInput(QtGui.QFrame, Input):
+    labels = []
+
+    def __init__(self, parameter, parent=None, **kwargs):
+        if not self.labels:
+            self.labels = [""] * parameter._length
+
+        self._setup_ui()
+        if qt_min_version(5):
+            super().__init__(parameter=parameter, parent=parent, **kwargs)
+        else:
+            QtGui.QWidget.__init__(self, parent=parent, **kwargs)
+            Input.__init__(self, parameter)
+        self._layout()
+
+    @classmethod
+    def set_labels(cls, labels):
+        class BooleanListInputSubClass(cls):
+            pass
+
+        BooleanListInputSubClass.labels = labels
+        return BooleanListInputSubClass
+
+    def _setup_ui(self):
+        self.rows = []
+        for label in self.labels:
+            self.rows.append(BooleanInput(BooleanParameter(label)))
+
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setSpacing(6)
+        for row in self.rows:
+            vbox.addWidget(row)
+        self.setLayout(vbox)
+        self.setFrameShape(QtGui.QFrame.Panel)
+        self.setFrameShadow(QtGui.QFrame.Raised)
+        self.setLineWidth(3)
+
+    def setValue(self, value):
+        for index, row in enumerate(self.rows):
+            row.setValue(value[index])
+
+    def setSuffix(self, value):
+        pass
+
+    def value(self):
+        return [row.value() for row in self.rows]
