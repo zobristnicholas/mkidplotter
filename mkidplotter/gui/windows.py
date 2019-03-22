@@ -62,7 +62,11 @@ class ManagedWindow(w.ManagedWindow):
         self.color_cycle = cycler(color=[(31, 119, 180), (255, 127, 14), (44, 160, 44), (214, 39, 40),
                                          (148, 103, 189), (140, 86, 75), (227, 119, 194), (127, 127, 127),
                                          (188, 189, 34), (23, 190, 207)])
-        super().__init__(procedure_class, inputs=inputs, x_axis=x_axes[0][0], y_axis=y_axes[0][0], **kwargs)
+        displays = kwargs.pop('displays', None)
+        if displays is None:
+            displays = inputs
+        super().__init__(procedure_class, displays=displays, inputs=inputs, x_axis=x_axes[0][0], y_axis=y_axes[0][0],
+                         **kwargs)
         self.update_browser_column_width()
 
     def _setup_ui(self):
