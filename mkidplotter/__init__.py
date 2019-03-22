@@ -4,7 +4,7 @@ from mkidplotter.gui.inputs import NoiseInput, BooleanListInput
 from mkidplotter.gui.windows import SweepGUI, PulseGUI
 from mkidplotter.gui.parameters import (DirectoryParameter, FileParameter,
                                         TextEditParameter)
-from mkidplotter.gui.indicators import IntegerIndicator, FloatIndicator, BooleanIndicator
+from mkidplotter.gui.indicators import IntegerIndicator, FloatIndicator, BooleanIndicator, Indicator
 from mkidplotter.gui.widgets import (SweepPlotWidget, TransmissionPlotWidget,
                                      NoisePlotWidget, PulsePlotWidget, TimePlotWidget)
 from mkidplotter.gui.procedures import (SweepGUIProcedure, SweepGUIProcedure2,

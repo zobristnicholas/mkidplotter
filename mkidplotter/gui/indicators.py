@@ -4,7 +4,7 @@ from pymeasure.display.Qt import QtCore
 
 class Indicator(QtCore.QObject):
     """ Encapsulates the information for an experiment indicator
-    with information about the name, and units if supplied.
+    with information about the name.
     :var value: The value of the parameter
     :param name: The parameter name
     :param default: The default value
