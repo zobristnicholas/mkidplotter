@@ -118,6 +118,19 @@ class MKIDProcedure(Procedure):
         self._file_name = base
         return self._file_name
 
+    def file_name_parts(self):
+        """Returns the arguments used to create the file_name in file_name()."""
+        file_name = self.file_name().split("_")
+        time = "_".join(file_name[-2:]).split(".")[0]
+        numbers = []
+        name = ""
+        for number in file_name[:-2]:
+            try:
+                numbers.append(int(number))
+            except ValueError:
+                name = number
+        return {"prefix": name, "numbers": numbers, "time": time}
+
     def emit(self, topic, record, clear=False):
         """Stops emit() from being required to be patched by a worker."""
         pass
