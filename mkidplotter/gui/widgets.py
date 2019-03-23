@@ -336,7 +336,7 @@ class IndicatorsWidget(QtGui.QWidget):
 
     def _make_input(self, name, indicator):
         if indicator.ui_class is not None:
-            element = parameter.ui_class
+            element = indicator.ui_class
 
         elif isinstance(indicator, BooleanIndicator):
             raise NotImplementedError
@@ -345,7 +345,7 @@ class IndicatorsWidget(QtGui.QWidget):
             element = StringDisplay(indicator)
 
         else:
-            raise ValueError("unrecognized indicator type: {}".format(type(parameter)))
+            raise ValueError("unrecognized indicator type: {}".format(type(indicator)))
         self.inputs.append(name)
         setattr(self, name, element)
 
@@ -360,17 +360,26 @@ class IndicatorsWidget(QtGui.QWidget):
     def _add_widget(self, name, vbox):
         indicators = self._procedure.indicator_objects
         widget = getattr(self, name)
+        hbox = QtGui.QHBoxLayout(self)
         if not isinstance(widget, self.NO_LABEL_INPUTS):
             label = QtGui.QLabel(self)
             label.setText("%s:" % indicators[name].name)
-            vbox.addWidget(label)
-        vbox.addWidget(widget)
+            hbox.addWidget(label)
+        hbox.addWidget(widget)
+        vbox.addLayout(hbox)
+        vbox.addStretch(0)
+        
+    def sizeHint(self):
+        return QtCore.QSize(300, 0)
 
 
 class InputsWidget(widgets.InputsWidget):
     """
     Fixes set_parameters bug in pymeasure (would always set to default if existed).
     Puts NoiseWidget last in layout column."""
+    NO_LABEL_INPUTS = (BooleanInput, DirectoryInput, FileInput, BooleanListInput, NoiseInput)
+    
+    
     def set_parameters(self, parameter_objects):
         for name in self._inputs:
             parameter = parameter_objects[name]
@@ -445,14 +454,22 @@ class InputsWidget(widgets.InputsWidget):
     def _add_widget(self, name, vbox):
         parameters = self._procedure.parameter_objects()
         widget = getattr(self, name)
+        hbox = QtGui.QHBoxLayout(self)
         if not isinstance(widget, self.NO_LABEL_INPUTS):
             label = QtGui.QLabel(self)
             label.setText("%s:" % parameters[name].name)
-            vbox.addWidget(label)
-        vbox.addWidget(widget)
+            hbox.addWidget(label)
+        hbox.addWidget(widget)
+        vbox.addLayout(hbox)
+        vbox.addStretch(0)
+        
+    def sizeHint(self):
+        return QtCore.QSize(300, 0)
 
 
 class SweepInputsWidget(InputsWidget):
+    NO_LABEL_INPUTS = (BooleanInput, BooleanListInput, NoiseInput)
+    
     def _setup_ui(self):
         parameter_objects = self._procedure.parameter_objects()
         self._make_input(self._inputs["directory_inputs"],
@@ -469,13 +486,11 @@ class SweepInputsWidget(InputsWidget):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
 
-        label = QtGui.QLabel()
-        label.setText(parameters[self._inputs["directory_inputs"]].name)
+        directory = getattr(self, self._inputs["directory_inputs"])
         font = QtGui.QFont()
         font.setBold(True)
-        label.setFont(font)
-        vbox.addWidget(label)
-        vbox.addWidget(getattr(self, self._inputs["directory_inputs"]))
+        directory.label.setFont(font)
+        vbox.addWidget(directory)
         grid = QtGui.QGridLayout()
         for index, (_, parameter) in enumerate(self._inputs["frequency_inputs"]):
             label = QtGui.QLabel()
@@ -488,7 +503,7 @@ class SweepInputsWidget(InputsWidget):
 
         for inputs in self._inputs["sweep_inputs"]:
             label = QtGui.QLabel()
-            label.setText(inputs[-1])
+            label.setText(inputs[-1] + ":")
             font = QtGui.QFont()
             font.setBold(True)
             label.setFont(font)

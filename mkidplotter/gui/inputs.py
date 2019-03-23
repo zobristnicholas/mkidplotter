@@ -17,17 +17,23 @@ class FileInput(QtGui.QWidget, Input):
         self.button = QtGui.QPushButton("Find")
         self.button.clicked.connect(self.get_file)
         self.line_edit = QtGui.QLineEdit()
+        self.label = QtGui.QLabel()
 
         if qt_min_version(5):
             super().__init__(parameter=parameter, parent=parent, **kwargs)
         else:
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
             Input.__init__(self, parameter)
-
-        hbox = QtGui.QHBoxLayout()
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.setContentsMargins(0, 0, 0, 0)
+        if parameter.name:
+            self.label.setText(self.parameter.name +":")
+            vbox.addWidget(self.label)
+        hbox = QtGui.QHBoxLayout(self)
         hbox.addWidget(self.button)
         hbox.addWidget(self.line_edit)
-        self.setLayout(hbox)
+        vbox.addLayout(hbox)
+        self.setLayout(vbox)
 
     def setValue(self, value):
         # QtGui.QLineEdit has a setText() method instead of setValue()
@@ -123,26 +129,40 @@ class NoiseInput(QtGui.QFrame, Input):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
         
+        label = QtGui.QLabel(self)
+        label.setText(self.parameter.name +":")
+        vbox.addWidget(label)
+        
         vbox.addWidget(self.take_noise)
+        hbox = QtGui.QHBoxLayout(self)
         label = QtGui.QLabel(self)
         label.setText("%s:" % self.integration.parameter.name)
-        vbox.addWidget(label)
-        vbox.addWidget(self.integration)
+        hbox.addWidget(label)
+        hbox.addWidget(self.integration)
+        vbox.addLayout(hbox)
+        
+        hbox = QtGui.QHBoxLayout(self)
         label = QtGui.QLabel(self)
         label.setText("%s:" % self.n_int.parameter.name)
-        vbox.addWidget(label)
-        vbox.addWidget(self.n_int)
+        hbox.addWidget(label)
+        hbox.addWidget(self.n_int)
+        vbox.addLayout(hbox)
+        
         if self._populate_off_resonance:
             vbox.addWidget(self.off_resonance)
+            hbox = QtGui.QHBoxLayout(self)
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.offset.parameter.name)
-            vbox.addWidget(label)
-            vbox.addWidget(self.offset)
+            hbox.addWidget(label)
+            hbox.addWidget(self.offset)
+            vbox.addLayout(hbox)
+
+            hbox = QtGui.QHBoxLayout(self)
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.n_off.parameter.name)
-            vbox.addWidget(label)
-            vbox.addWidget(self.n_off)
-        
+            hbox.addWidget(label)
+            hbox.addWidget(self.n_off)
+            vbox.addLayout(hbox)
         self.setLayout(vbox)
         self.setFrameShape(QtGui.QFrame.Panel)
         self.setFrameShadow(QtGui.QFrame.Raised)
@@ -213,7 +233,6 @@ class BooleanListInput(QtGui.QFrame, Input):
     def set_labels(cls, labels):
         class BooleanListInputSubClass(cls):
             pass
-
         BooleanListInputSubClass.labels = labels
         return BooleanListInputSubClass
 
@@ -225,6 +244,10 @@ class BooleanListInput(QtGui.QFrame, Input):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
+        if self.parameter.name:
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % self.parameter.name)
+            vbox.addWidget(label)
         for row in self.rows:
             vbox.addWidget(row)
         self.setLayout(vbox)
