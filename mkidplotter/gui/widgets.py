@@ -352,6 +352,7 @@ class IndicatorsWidget(QtGui.QWidget):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
+        vbox.setContentsMargins(0, 0, 0, 0)
         inputs = list(self._procedure.indicator_objects.keys())
         for name in inputs:
             self._add_widget(name, vbox)
@@ -430,6 +431,7 @@ class InputsWidget(widgets.InputsWidget):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
+        vbox.setContentsMargins(0, 0, 0, 0)
         inputs = list(self._inputs)
 
         remove_indices = []

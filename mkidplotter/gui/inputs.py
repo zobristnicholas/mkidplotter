@@ -128,6 +128,8 @@ class NoiseInput(QtGui.QFrame, Input):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
+        left, top, right, bottom = vbox.getContentsMargins()
+        vbox.setContentsMargins(left, top // 2, right, bottom // 2)
         
         label = QtGui.QLabel(self)
         label.setText(self.parameter.name +":")
@@ -244,6 +246,8 @@ class BooleanListInput(QtGui.QFrame, Input):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
+        left, top, right, bottom = vbox.getContentsMargins()
+        vbox.setContentsMargins(left, top // 2, right, bottom // 2)
         if self.parameter.name:
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.parameter.name)
