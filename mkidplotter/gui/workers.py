@@ -17,9 +17,13 @@ class Worker(w.Worker):
         if topic == 'results':
             # clear the file if requested
             if clear:
+                data = self.results.data
                 with open(self.results.data_filename, 'w') as file_:
                     file_.write(self.results.header())
                     file_.write(self.results.labels())
+                for key, value in data.items():  # add back in data that we aren't clearing
+                    if key not in record.keys():
+                        record[key] = data[key]
             # collect the data into a numpy structured array
             size = max([value.size if hasattr(value, "shape") and value.shape
                         else np.array([value]).size for value in record.values()])
