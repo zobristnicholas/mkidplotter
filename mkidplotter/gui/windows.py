@@ -768,7 +768,6 @@ class PulseGUI(ManagedWindow):
         save_name = os.path.join(experiment.procedure.directory, "config_pulse_" + start_time + ".npz")
         parameter_dict = experiment.procedure.parameter_values()
         self.save_config(save_name, parameter_dict)
-        log.warning(parameter_dict)
 
     @staticmethod
     def save_config(save_name, parameter_dict):
