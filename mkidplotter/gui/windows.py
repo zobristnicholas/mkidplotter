@@ -376,9 +376,8 @@ class ManagedWindow(w.ManagedWindow):
         action_remove.setText("Remove Graph")
         if self.manager.is_running():
             if self.manager.running_experiment() == experiment:  # Experiment running
-                self.action_remove.setEnabled(False)
-        action_remove.triggered.connect(
-            lambda: self.remove_experiment(experiment))
+               action_remove.setEnabled(False)
+        action_remove.triggered.connect(lambda: self.remove_experiment(experiment))
         menu.addAction(action_remove)
 
         # Use parameters
@@ -477,10 +476,7 @@ class ManagedWindow(w.ManagedWindow):
                     self.abort()
                 self.resume()
         # try to close the DAC
-        try:
-            self.procedure_class.close()
-        except AttributeError:
-            pass
+        self.close_procedure()
         self.closing = True
         event.accept()
         
@@ -490,6 +486,11 @@ class ManagedWindow(w.ManagedWindow):
     def save_as_default(self):
         raise NotImplementedError
 
+    def close_procedure(self):
+        try:
+            self.procedure_class.close()
+        except AttributeError:
+            pass
 
 class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
@@ -501,6 +502,7 @@ class SweepGUI(ManagedWindow):
         self.sweep_inputs = self.ordering["sweep_inputs"]
         self.directory_inputs = self.ordering["directory_inputs"]
         self.frequency_inputs = self.ordering["frequency_inputs"]
+        self.pulse_window = None  # reserved for open_pulse_window()
 
         # get an ordered list of the procedure class names
         parameters = list(procedure_class().parameter_names)
@@ -558,6 +560,30 @@ class SweepGUI(ManagedWindow):
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, base_inputs_dock)
 
         super()._layout()
+
+    def define_browser_menu(self, item):
+        menu_dict = super().define_browser_menu(item)
+        menu = menu_dict['menu']
+        experiment = self.manager.experiments.with_browser_item(item)
+
+        action_open_pulse = QtGui.QAction(menu)
+        action_open_pulse.setText("Use Settings in Pulse GUI")
+        if self.manager.is_running():
+            if self.manager.running_experiment() == experiment:  # Experiment running
+               action_open_pulse.setEnabled(False)
+        action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(experiment))
+        
+        menu.addAction(action_open_pulse)
+        menu_dict['pulse'] = action_open_pulse
+        
+        return menu_dict
+        
+    def open_pulse_gui(self, experiment):
+        """
+        Programs must define their own logic to open a pulse GUI. The window can be saved
+        as self.pulse_window for future access.
+        """
+        raise NotImplementedError
 
     @staticmethod
     def save_config(save_name, sweep_dict, parameter_dict):
@@ -701,12 +727,22 @@ class SweepGUI(ManagedWindow):
         self.update_browser_column_width()
         save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
         self.save_config(save_name, sweep_dict, parameter_dict)
+        
+    def close_procedure(self):
+        if self.pulse_window is not None and not self.pulse_window.isVisible():
+            try:
+                self.procedure_class.close()
+            except AttributeError:
+                pass
 
 
 class PulseGUI(ManagedWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.sweep_gui = None  # reserved for open_pulse_window() in SweepGUI
         
+        self.setWindowTitle('Pulse GUI')
+
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         if not os.path.isdir(directory):
             os.mkdir(directory)
@@ -765,4 +801,10 @@ class PulseGUI(ManagedWindow):
         file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory, "Config files (config_pulse*.npz)")
         if file_name:
             self.set_config(file_name)
-
+            
+    def close_procedure(self):
+        if self.sweep_window is not None and not self.sweep_window.isVisible():
+            try:
+                self.procedure_class.close()
+            except AttributeError:
+                pass
