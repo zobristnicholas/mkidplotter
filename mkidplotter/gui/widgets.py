@@ -12,14 +12,15 @@ from pymeasure.experiment import Results
 import pymeasure.display.widgets as widgets
 from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.curves import Crosshairs
-from pymeasure.display.inputs import ScientificInput, IntegerInput, BooleanInput, ListInput, StringInput
+from pymeasure.display.inputs import IntegerInput, BooleanInput, ListInput, StringInput
 from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParameter, ListParameter, Parameter
 
+from mkidplotter.gui.displays import StringDisplay
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
-from mkidplotter.gui.inputs import FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
-from mkidplotter.gui.displays import StringDisplay
+from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput,
+                                    ScientificInput)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())

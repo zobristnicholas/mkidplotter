@@ -1,15 +1,34 @@
 import os
+import re
 import logging
-from pymeasure.display.inputs import Input
+import pymeasure.display.inputs as inputs
 from pymeasure.display.Qt import QtCore, QtGui, qt_min_version
 from pymeasure.experiment import IntegerParameter, FloatParameter, BooleanParameter
-from pymeasure.display.inputs import (ScientificInput, IntegerInput, BooleanInput)
                                       
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class FileInput(QtGui.QWidget, Input):
+class ScientificInput(inputs.ScientificInput):
+    """ Fixes small precision of pymeasure ScientificInput"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDecimals(12)
+        
+    def textFromValue(self, value):
+        string = "{:.12g}".format(value).replace("e+", "e")
+        string = re.sub("e(-?)0*(\d+)", r"e\1\2", string)
+        return string
+
+
+class FloatInput(inputs.FloatInput):
+    """ Fixes small precision of pymeasure FloatInput"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDecimals(12)
+
+
+class FileInput(QtGui.QWidget, inputs.Input):
     """
     File name input box connected to a :class:`FileParameter`.
     """
@@ -23,7 +42,7 @@ class FileInput(QtGui.QWidget, Input):
             super().__init__(parameter=parameter, parent=parent, **kwargs)
         else:
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
-            Input.__init__(self, parameter)
+            inputs.Input.__init__(self, parameter)
         vbox = QtGui.QVBoxLayout(self)
         vbox.setContentsMargins(0, 0, 0, 0)
         if parameter.name:
@@ -66,7 +85,7 @@ class DirectoryInput(FileInput):
             self.setValue(file_name)
 
 
-class FloatTextEditInput(QtGui.QTextEdit, Input):
+class FloatTextEditInput(QtGui.QTextEdit, inputs.Input):
     """
     Text edit input box connected to a :class:`TextEditParameter` that assumes
     floats input with line breaks in between.
@@ -76,7 +95,7 @@ class FloatTextEditInput(QtGui.QTextEdit, Input):
             super().__init__(parameter=parameter, parent=parent, **kwargs)
         else:
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
-            Input.__init__(self, parameter)
+            inputs.Input.__init__(self, parameter)
 
     def setValue(self, value):
         # QtGui.QTextEdit has a setPlainText() method instead of setValue()
@@ -97,7 +116,7 @@ class FloatTextEditInput(QtGui.QTextEdit, Input):
         return QtCore.QSize(0, 120)
         
 
-class NoiseInput(QtGui.QFrame, Input):
+class NoiseInput(QtGui.QFrame, inputs.Input):
     def __init__(self, parameter, parent=None, **kwargs):
         if parameter._length == 3:
             self._populate_off_resonance = False
@@ -111,19 +130,19 @@ class NoiseInput(QtGui.QFrame, Input):
             super().__init__(parameter=parameter, parent=parent, **kwargs)
         else:
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
-            Input.__init__(self, parameter)
+            inputs.Input.__init__(self, parameter)
         self._layout()
         
     def _setup_ui(self):
-        self.take_noise = BooleanInput(BooleanParameter("Take Data"))
+        self.take_noise = inputs.BooleanInput(BooleanParameter("Take Data"))
         self.take_noise.stateChanged.connect(self.noise_state)
-        self.integration = ScientificInput(FloatParameter("Integration Time", units="s"))
-        self.n_int = IntegerInput(IntegerParameter("# of Integrations"))
+        self.integration = inputs.ScientificInput(FloatParameter("Integration Time", units="s"))
+        self.n_int = inputs.IntegerInput(IntegerParameter("# of Integrations"))
         if self._populate_off_resonance:
-            self.off_resonance = BooleanInput(BooleanParameter("Take Off Resonance Data"))
+            self.off_resonance = inputs.BooleanInput(BooleanParameter("Take Off Resonance Data"))
             self.off_resonance.stateChanged.connect(self.off_resonance_state)
-            self.offset = ScientificInput(FloatParameter("Frequency Offset", units="MHz"))
-            self.n_off = IntegerInput(IntegerParameter("# of Points"))
+            self.offset = inputs.ScientificInput(FloatParameter("Frequency Offset", units="MHz"))
+            self.n_off = inputs.IntegerInput(IntegerParameter("# of Points"))
     
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
@@ -216,7 +235,7 @@ class NoiseInput(QtGui.QFrame, Input):
             self.n_off.setDisabled(True)
 
 
-class BooleanListInput(QtGui.QFrame, Input):
+class BooleanListInput(QtGui.QFrame, inputs.Input):
     labels = []
 
     def __init__(self, parameter, parent=None, **kwargs):
@@ -228,7 +247,7 @@ class BooleanListInput(QtGui.QFrame, Input):
             super().__init__(parameter=parameter, parent=parent, **kwargs)
         else:
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
-            Input.__init__(self, parameter)
+            inputs.Input.__init__(self, parameter)
         self._layout()
 
     @classmethod
@@ -241,7 +260,7 @@ class BooleanListInput(QtGui.QFrame, Input):
     def _setup_ui(self):
         self.rows = []
         for label in self.labels:
-            self.rows.append(BooleanInput(BooleanParameter(label)))
+            self.rows.append(inputs.BooleanInput(BooleanParameter(label)))
 
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)

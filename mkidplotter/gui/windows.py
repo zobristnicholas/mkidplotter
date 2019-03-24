@@ -70,6 +70,17 @@ class ManagedWindow(w.ManagedWindow):
         self.update_browser_column_width()
 
     def _setup_ui(self):
+        load_configuration = QtGui.QAction("Load Configuration", self)
+        load_configuration.triggered.connect(self.load_config)
+
+        save_as_default = QtGui.QAction("Save Current Settings as Default", self)
+        save_as_default.triggered.connect(self.save_as_default)
+
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu('Options')
+        file_menu.addAction(load_configuration)
+        file_menu.addAction(save_as_default)
+        
         self.log_widget = LogWidget()
         self.log.addHandler(self.log_widget.handler)  # needs to be in Qt context?
         log.info("ManagedWindow connected to logging")
@@ -472,6 +483,12 @@ class ManagedWindow(w.ManagedWindow):
             pass
         self.closing = True
         event.accept()
+        
+    def load_config(self):
+        raise NotImplementedError
+        
+    def save_as_default(self):
+        raise NotImplementedError
 
 
 class SweepGUI(ManagedWindow):
@@ -524,18 +541,6 @@ class SweepGUI(ManagedWindow):
 
     def _setup_ui(self):
         self.base_inputs_widget = SweepInputsWidget(self.base_procedure_class, self.ordering, parent=self)
-
-        load_configuration = QtGui.QAction("Load Configuration", self)
-        load_configuration.triggered.connect(self.load_config)
-
-        save_as_default = QtGui.QAction("Save Current Settings as Default", self)
-        save_as_default.triggered.connect(self.save_as_default)
-
-        main_menu = self.menuBar()
-        file_menu = main_menu.addMenu('Options')
-        file_menu.addAction(load_configuration)
-        file_menu.addAction(save_as_default)
-
         super()._setup_ui()
 
     def _layout(self):
@@ -699,6 +704,16 @@ class SweepGUI(ManagedWindow):
 
 
 class PulseGUI(ManagedWindow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        file_path = os.path.join(directory, "pulse_default.npz")
+        if os.path.isfile(file_path):
+            self.set_config(file_path)
+            
     def queue(self):
         # make results object to hold the gui data
         procedure = self.make_procedure()  # Procedure class was passed at construction
@@ -706,14 +721,48 @@ class PulseGUI(ManagedWindow):
         results = ContinuousResults(procedure, file_path)
         # make the experiment
         experiment = self.new_experiment(results)
-        file_name = procedure.file_name("pulse")
+        start_time = datetime.now().strftime("%y%m%d_%H%M%S")
+        file_name = procedure.file_name("pulse", time=start_time)
         experiment.browser_item.setText(1, file_name)
         experiment.data_filename = file_name
         # queue the experiment
         self.manager.queue(experiment)
         # do some post queuing stuff
         self.update_browser_column_width()
-        self.save_config()
+        save_name = os.path.join(experiment.procedure.directory, "config_pulse_" + start_time + ".npz")
+        parameter_dict = experiment.procedure.parameter_values()
+        self.save_config(save_name, parameter_dict)
+        log.warning(parameter_dict)
 
-    def save_config(self):
-        pass
+    @staticmethod
+    def save_config(save_name, parameter_dict):
+        np.savez(save_name, parameter_dict=parameter_dict)
+    
+    def set_config(self, file_name):
+        log.info("loading configuration from {}".format(file_name))
+        npz_file = np.load(file_name)
+        parameter_dict = npz_file['parameter_dict'].item()
+        parameters = self.make_procedure().parameter_objects()
+        for key, value in parameter_dict.items():
+            if key in parameters.keys():
+                parameters[key].value = value
+        self.inputs.set_parameters(parameters)
+
+    def save_as_default(self):
+        procedure = self.make_procedure()
+        parameter_dict = procedure.parameter_values()
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        file_path = os.path.join(directory, "pulse_default.npz")
+        log.info("saving configuration as default to {}".format(file_path))
+        self.save_config(file_path, parameter_dict)
+        
+    def load_config(self):
+        procedure = self.make_procedure()
+        try:
+            directory = procedure.directory
+        except AttributeError:
+            directory = ""
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory, "Config files (config_pulse*.npz)")
+        if file_name:
+            self.set_config(file_name)
+
