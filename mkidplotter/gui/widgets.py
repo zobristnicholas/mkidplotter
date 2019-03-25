@@ -4,7 +4,6 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from cycler import cycler
-from collections import deque
 from datetime import datetime
 import pyqtgraph.graphicsItems.LegendItem as li
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
@@ -270,9 +269,9 @@ class TimeAxisItem(pg.AxisItem):
         return [datetime.fromtimestamp(value).strftime("%H:%M:%S") for value in values]
 
 
-class TimePlotWidget(QtGui.QFrame):
+class TimePlotIndicator(QtGui.QFrame):
     """Plot widget for plotting data over a long time. Intended for use as a persistent indicator."""
-    def __init__(self, get_data, title='', refresh_time=60, max_length=1440, **kwargs):
+    def __init__(self, data_x, data_y, title='', refresh_time=2, **kwargs):
         super().__init__(**kwargs)
         self.setAutoFillBackground(False)
         self.setStyleSheet("background: #fff")
@@ -280,9 +279,8 @@ class TimePlotWidget(QtGui.QFrame):
         self.setFrameShadow(QtGui.QFrame.Sunken)
         self.setMidLineWidth(1)
 
-        self.data_x = deque(maxlen=max_length)
-        self.data_y = deque(maxlen=max_length)
-        self.get_data = get_data
+        self.data_x = data_x
+        self.data_y = data_y
 
         self.coordinates = QtGui.QLabel(self)
         self.coordinates.setMinimumSize(QtCore.QSize(0, 20))
@@ -306,8 +304,6 @@ class TimePlotWidget(QtGui.QFrame):
         self.setLayout(vbox)
 
     def update(self):
-        self.data_x.append(datetime.now().timestamp())
-        self.data_y.append(self.get_data())
         self.curve.setData(x=list(self.data_x), y=list(self.data_y))
 
     def update_coordinates(self, x, y):

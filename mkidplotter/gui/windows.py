@@ -493,6 +493,7 @@ class ManagedWindow(w.ManagedWindow):
         except AttributeError:
             pass
 
+
 class SweepGUI(ManagedWindow):
     def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
