@@ -731,7 +731,7 @@ class SweepGUI(ManagedWindow):
         self.save_config(save_name, sweep_dict, parameter_dict)
         
     def close_procedure(self):
-        if self.pulse_window is not None and not self.pulse_window.isVisible():
+        if self.pulse_window is None or not self.pulse_window.isVisible():
             try:
                 self.procedure_class.close()
             except AttributeError:
@@ -742,7 +742,7 @@ class PulseGUI(ManagedWindow):
     def __init__(self, *args, **kwargs):
         log.info("Opening Pulse GUI")
         super().__init__(*args, **kwargs)
-        self.sweep_gui = None  # reserved for open_pulse_window() in SweepGUI
+        self.sweep_window = None  # reserved for open_pulse_window() in SweepGUI
         
         self.setWindowTitle('Pulse GUI')
 
@@ -805,7 +805,7 @@ class PulseGUI(ManagedWindow):
             self.set_config(file_name)
             
     def close_procedure(self):
-        if self.sweep_window is not None and not self.sweep_window.isVisible():
+        if self.sweep_window is None or not self.sweep_window.isVisible():
             try:
                 self.procedure_class.close()
             except AttributeError:

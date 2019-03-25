@@ -15,7 +15,7 @@ from pymeasure.display.curves import Crosshairs
 from pymeasure.display.inputs import IntegerInput, BooleanInput, ListInput, StringInput
 from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParameter, ListParameter, Parameter
 
-from mkidplotter.gui.displays import StringDisplay
+from mkidplotter.gui.displays import StringDisplay, FloatDisplay
 from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
@@ -341,8 +341,11 @@ class IndicatorsWidget(QtGui.QWidget):
 
         elif isinstance(indicator, BooleanIndicator):
             raise NotImplementedError
+            
+        elif isinstance(indicator, FloatIndicator):
+            element = FloatDisplay(indicator)
 
-        elif isinstance(indicator, (FloatIndicator, IntegerIndicator, Indicator)):
+        elif isinstance(indicator, (IntegerIndicator, Indicator)):
             element = StringDisplay(indicator)
 
         else:

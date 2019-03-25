@@ -59,3 +59,28 @@ class StringDisplay(QtGui.QLineEdit, Display):
 
     def update_indicator(self):
         super().setText(str(self.indicator))
+
+    def value(self):
+        # QtGui.QLineEdit has a text() method instead of value()
+        return super().text()
+        
+        
+class FloatDisplay(QtGui.QDoubleSpinBox, Display):
+    """
+    Spin input box for floating-point values, connected to a
+    :class:`FloatParameter`.
+    .. seealso::
+        Class :class:`~.ScientificInput`
+            For inputs in scientific notation.
+    """
+    def __init__(self, parameter, parent=None, **kwargs):
+        if qt_min_version(5):
+            super().__init__(parameter=parameter, parent=parent, **kwargs)
+        else:
+            QtGui.QDoubleSpinBox.__init__(self, parent=parent, **kwargs)
+            Display.__init__(self, parameter)
+        self.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        
+    def update_indicator(self):
+        super().setValue(self.indicator.value)
+
