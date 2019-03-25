@@ -167,6 +167,7 @@ class ManagedWindow(w.ManagedWindow):
                 indicator_vbox.addWidget(self.indicators)
             for indicator in self.persistent_indicators:
                 indicator_vbox.addWidget(indicator)
+            indicator_vbox.addStretch()
             indicator_dock.setLayout(indicator_vbox)
             indicator_dock_widget = QtGui.QDockWidget('Indicators')
             indicator_dock_widget.setWidget(indicator_dock)
@@ -497,6 +498,7 @@ class SweepGUI(ManagedWindow):
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
                  plot_names=("Sweep Plot",), **kwargs):
+        log.info("Opening Sweep GUI")
         self.base_procedure_class = base_procedure_class
         self.ordering = copy.deepcopy(self.base_procedure_class().ordering)
         self.sweep_inputs = self.ordering["sweep_inputs"]
@@ -738,6 +740,7 @@ class SweepGUI(ManagedWindow):
 
 class PulseGUI(ManagedWindow):
     def __init__(self, *args, **kwargs):
+        log.info("Opening Pulse GUI")
         super().__init__(*args, **kwargs)
         self.sweep_gui = None  # reserved for open_pulse_window() in SweepGUI
         

@@ -369,7 +369,6 @@ class IndicatorsWidget(QtGui.QWidget):
             hbox.addWidget(label)
         hbox.addWidget(widget)
         vbox.addLayout(hbox)
-        vbox.addStretch(0)
         
     def sizeHint(self):
         return QtCore.QSize(300, 0)
