@@ -1,4 +1,9 @@
+import re
+import logging
 from pymeasure.display.Qt import QtGui, qt_min_version
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 
 class Display(object):
@@ -73,14 +78,22 @@ class FloatDisplay(QtGui.QDoubleSpinBox, Display):
         Class :class:`~.ScientificInput`
             For inputs in scientific notation.
     """
-    def __init__(self, parameter, parent=None, **kwargs):
+    def __init__(self, indicator, parent=None, **kwargs):
         if qt_min_version(5):
-            super().__init__(parameter=parameter, parent=parent, **kwargs)
+            super().__init__(indicator=indicator, parent=parent, **kwargs)
         else:
             QtGui.QDoubleSpinBox.__init__(self, parent=parent, **kwargs)
-            Display.__init__(self, parameter)
+            Display.__init__(self, indicator)
         self.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons)
+        self.setDecimals(12)
+        self.setMaximum(10**indicator.precision)
+        self.setMinimum(-10**indicator.precision)
         
     def update_indicator(self):
         super().setValue(self.indicator.value)
+        
+    def textFromValue(self, value):
+        string = "{:.12g}".format(value).replace("e+", "e")
+        string = re.sub("e(-?)0*(\d+)", r"e\1\2", string)
+        return string
 

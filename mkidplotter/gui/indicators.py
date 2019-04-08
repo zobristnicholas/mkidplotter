@@ -1,4 +1,8 @@
+import logging
 from pymeasure.display.Qt import QtCore
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 
 class Indicator(QtCore.QObject):
@@ -108,18 +112,6 @@ class FloatIndicator(IntegerIndicator):
         except ValueError:
             raise ValueError("FloatIndicator given non-float value of type '%s'" % type(value))
 
-    def __str__(self):
-        if not self.is_set():
-            return ''
-        value = self._value
-        n_before = len(str(value).split('.')[0])
-        if n_before < self.precision:
-            result = ("{:." + str(int(self.precision - n_before)) + "f}").format(value)
-        else:
-            result = ("{:." + str(int(self.precision) - 1) + "E}").format(value)
-        if self.units:
-            result += " %s" % self.units
-        return result
 
 
 class BooleanIndicator(Indicator):
