@@ -232,8 +232,34 @@ class TransmissionPlotWidget(SweepPlotWidget):
         self.plot.setAspectLocked(False)
 
 
-class PulsePlotWidget(TransmissionPlotWidget):
-    pass
+class PulsePlotWidget(PlotWidget):
+    def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
+                 y_label=None, legend_text=None, **kwargs):
+        self.x_axes = x_axes
+        self.y_axes = y_axes
+        self.x_label = x_label
+        self.y_label = y_label
+        self.legend_text = legend_text
+        self._point_size = 6
+        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(None), pg.mkPen(None),
+                                   pg.mkPen(None), pg.mkPen(None)],
+                           "symbol": ['o', 'o', 't', 'd', '+'],
+                           "symbolPen": [pg.mkPen(None), pg.mkPen(None),
+                                         pg.mkPen(color='k', width=1),
+                                         pg.mkPen(color='k', width=1),
+                                         pg.mkPen(color='k', width=1)],
+                           "symbolBrush": [pg.mkBrush(color='k'), pg.mkBrush(color='k'),
+                                           pg.mkBrush(color='k'), pg.mkBrush(color='k'),
+                                           pg.mkBrush(color='k')],
+                           "symbolSize": [self._point_size, 2,
+                                          self._point_size, self._point_size,
+                                          self._point_size],
+                           "pxMode": [True, True, True, True, True]}
+        n = int(np.ceil(len(self.x_axes) / len(self.line_style["pen"])))
+        self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
+        self.cycler = (color_cycle * self.style_cycle)()
+        super().__init__(*args, **kwargs)
+        self.plot.setAspectLocked(True)
 
 
 class NoisePlotWidget(PlotWidget):
