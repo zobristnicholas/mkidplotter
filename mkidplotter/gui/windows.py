@@ -419,6 +419,10 @@ class ManagedWindow(w.ManagedWindow):
                                plot_widget_classes=self.plot_widget_classes,
                                plot_names=self.plot_names,
                                color_cycle=self.color_cycle)
+        sweep_procedure = self.base_inputs_widget.get_procedure()
+        sweep_dict = sweep_procedure.parameter_values()
+        directory = sweep_dict[self.directory_inputs]
+        dialog.setDirectory(directory)
         if dialog.exec_():
             file_names = dialog.selectedFiles()
             self.load_from_file(file_names)
