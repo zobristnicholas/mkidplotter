@@ -382,21 +382,9 @@ class ManagedWindow(w.ManagedWindow):
         menu.addAction(action_remove)
 
         # Use parameters
-        def set_parameters(chosen_experiment):
-            sweep_parameters = self.base_procedure_class().parameter_objects()
-            parameters = chosen_experiment.procedure.parameter_objects()
-            sweep_parameters[self.directory_inputs].value = \
-                parameters[self.directory_inputs].value
-            for input_list in self.frequency_inputs:
-                sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
-            for input_list in self.sweep_inputs:
-                sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
-                sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
-            self.inputs.set_parameters(parameters)
-            self.base_inputs_widget.set_parameters(sweep_parameters)
         action_use = QtGui.QAction(menu)
         action_use.setText("Use These Parameters")
-        action_use.triggered.connect(lambda: set_parameters(experiment))
+        action_use.triggered.connect(lambda: self.set_parameters(experiment))
         menu.addAction(action_use)
         menu_dict = {"menu": menu, "open": action_open, "color": action_change_color,
                      "remove": action_remove, "use": action_use}
@@ -496,6 +484,10 @@ class ManagedWindow(w.ManagedWindow):
             self.procedure_class.close()
         except AttributeError:
             pass
+        
+    def set_parameters(self, chosen_experiment):
+        parameters = chosen_experiment.procedure.parameter_objects()
+        self.inputs.set_parameters(parameters)
 
 
 class SweepGUI(ManagedWindow):
@@ -568,6 +560,19 @@ class SweepGUI(ManagedWindow):
 
         super()._layout()
 
+    def set_parameters(self, chosen_experiment):
+        sweep_parameters = self.base_procedure_class().parameter_objects()
+        parameters = chosen_experiment.procedure.parameter_objects()
+        sweep_parameters[self.directory_inputs].value = \
+            parameters[self.directory_inputs].value
+        for input_list in self.frequency_inputs:
+            sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
+        for input_list in self.sweep_inputs:
+            sweep_parameters[input_list[1]].value = parameters[input_list[0]].value
+            sweep_parameters[input_list[2]].value = parameters[input_list[0]].value
+        self.inputs.set_parameters(parameters)
+        self.base_inputs_widget.set_parameters(sweep_parameters)
+        
     def define_browser_menu(self, item):
         menu_dict = super().define_browser_menu(item)
         menu = menu_dict['menu']
