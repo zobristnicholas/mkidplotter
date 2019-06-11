@@ -677,15 +677,8 @@ class SweepGUI(ManagedWindow):
             for parameter, sweep_parameter in self.frequency_inputs:
                 f_list = sweep_dict[sweep_parameter]
                 freq_dict[parameter] = f_list
-                # enforce span lists are the same length or have one value
-                if n_freq == 0:
+                if len(f_list) > n_freq:
                     n_freq = len(f_list)
-                elif n_freq == 1 and len(f_list) != 0:
-                    n_freq = len(f_list)
-                else:
-                    condition = (n_freq == len(f_list) or len(f_list) == 1 or
-                                 len(f_list) == 0)
-                    assert condition
             assert n_freq != 0
         except (ValueError, AssertionError):
             log.error("Invalid frequency and span lists")
@@ -702,12 +695,12 @@ class SweepGUI(ManagedWindow):
                 # set the frequency parameters
                 for parameter, _ in self.frequency_inputs:
                     f_list = freq_dict[parameter]
-                    if len(f_list) == 0:
-                        parameter_values.update({parameter: np.nan})
-                    elif len(f_list) == 1:
-                        parameter_values.update({parameter: f_list[0]})
-                    else:
+                    if f_index < len(f_list):
                         parameter_values.update({parameter: f_list[f_index]})
+                    elif len(f_list) != 0:
+                        parameter_values.update({parameter: f_list[-1]})
+                    else:
+                        parameter_values.update({parameter: np.nan})
                 # update the procedure
                 procedure = self.make_procedure()  # new instance for each experiment
                 procedure.set_parameters(parameter_values)
