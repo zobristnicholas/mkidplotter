@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class SweepGUIProcedure(Procedure):
+class SweepGUIProcedure1(Procedure):
     """Procedure class for holding the mandatory sweep input arguments"""
     ordering = {"directory_inputs": "directory",
                 "frequency_inputs": [["frequency", "frequencies"],

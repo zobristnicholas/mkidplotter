@@ -13,7 +13,7 @@ from pymeasure.display.manager import Experiment
 
 from mkidplotter.gui.managers import Manager
 from mkidplotter.gui.browser import BrowserItem
-from mkidplotter.gui.procedures import SweepGUIProcedure
+from mkidplotter.gui.procedures import SweepGUIProcedure1
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.results import Results, ContinuousResults
 from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
@@ -429,7 +429,7 @@ class ManagedWindow(w.ManagedWindow):
                     results = self.procedure_class().load(file_name)
                 except AttributeError:
                     results = Results.load(file_name)
-                results.procedure.status = SweepGUIProcedure.FINISHED
+                results.procedure.status = SweepGUIProcedure1.FINISHED
                 experiment = self.new_experiment(results)
                 for index, _ in enumerate(self.plot):
                     for _, curve in enumerate(experiment.curve[index]):
@@ -491,7 +491,7 @@ class ManagedWindow(w.ManagedWindow):
 
 
 class SweepGUI(ManagedWindow):
-    def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure,
+    def __init__(self, procedure_class, base_procedure_class=SweepGUIProcedure1,
                  x_axes=('I',), y_axes=('Q',), x_labels=('I [V]',), y_labels=('Q [V]',),
                  legend_text=('sweep',), plot_widget_classes=(SweepPlotWidget,),
                  plot_names=("Sweep Plot",), **kwargs):
