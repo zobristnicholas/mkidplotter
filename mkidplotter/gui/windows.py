@@ -612,7 +612,7 @@ class SweepGUI(ManagedWindow):
 
     def set_config(self, file_name):
         log.info("loading configuration from {}".format(file_name))
-        npz_file = np.load(file_name)
+        npz_file = np.load(file_name, allow_pickle=True)
         # set sweep parameters
         sweep_dict = npz_file['sweep_dict'].item()
         sweep_parameters = self.base_procedure_class().parameter_objects()
