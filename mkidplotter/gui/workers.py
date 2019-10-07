@@ -1,8 +1,11 @@
 import logging
 import numpy as np
 import pymeasure.experiment.workers as w
-
 from mkidplotter.gui.results import ContinuousResults
+try:
+    import cloudpickle
+except ImportError:
+    cloudpickle = None
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
