@@ -36,6 +36,15 @@ def wait_signal(signal, timeout=10000):
     loop.exec_()
 
 
+def load(file_name, **kwargs):
+    try:
+        npz_file = np.load(file_name, **kwargs)
+    except TypeError:
+        kwargs.pop("allow_pickle", None)
+        npz_file = np.load(file_name, **kwargs)  # fallback for old numpy that doesn't have allow_pickle
+    return npz_file
+
+
 # TODO: fix memory leak
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
@@ -604,7 +613,7 @@ class SweepGUI(ManagedWindow):
 
     def set_config(self, file_name):
         log.info("loading configuration from {}".format(file_name))
-        npz_file = np.load(file_name, allow_pickle=True)
+        npz_file = load(file_name, allow_pickle=True)
         # set sweep parameters
         sweep_dict = npz_file['sweep_dict'].item()
         sweep_parameters = self.base_procedure_class().parameter_objects()
@@ -773,7 +782,7 @@ class PulseGUI(ManagedWindow):
     
     def set_config(self, file_name):
         log.info("loading configuration from {}".format(file_name))
-        npz_file = np.load(file_name)
+        npz_file = load(file_name, allow_pickle=True)
         parameter_dict = npz_file['parameter_dict'].item()
         parameters = self.make_procedure().parameter_objects()
         for key, value in parameter_dict.items():
