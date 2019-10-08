@@ -1,13 +1,36 @@
 import sys
 from pymeasure.display.Qt import QtGui
 from mkidplotter.examples.sweep_procedure import Sweep
-from mkidplotter import (SweepGUI, SweepGUIProcedure2, SweepPlotWidget, NoisePlotWidget, TimePlotWidget,
+from mkidplotter import (SweepGUI, SweepGUIProcedure2, SweepPlotWidget, NoisePlotWidget, TimePlotIndicator,
                          get_image_icon)
 
 
-def temperature():
-    import numpy as np
-    return np.random.rand()
+import numpy as np
+from datetime import datetime
+from collections import deque
+from threading import Thread, Event
+
+time_stamps = deque(maxlen=int(24 * 60))
+temperatures = deque(maxlen=int(24 * 60))
+
+
+class Updater(Thread):
+    def __init__(self):
+        Thread.__init__(self, daemon=True)  # stop process on program exit
+        self.finished = Event()
+        self.start()
+
+    def cancel(self):
+        self.finished.set()
+
+    def run(self):
+        while not self.finished.wait(5):
+            self.update()
+
+    @staticmethod
+    def update():
+        time_stamps.append(datetime.now().timestamp())
+        temperatures.append(np.random.rand())
 
 
 def sweep_window():
@@ -20,7 +43,8 @@ def sweep_window():
     legend_list = (('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'),
                    ('sweep', 'bias point'), ('Amplitude Noise', 'Phase Noise'))
     widgets_list = (SweepPlotWidget, NoisePlotWidget, SweepPlotWidget, NoisePlotWidget)
-    indicators = TimePlotWidget(temperature, title='temperature', refresh_time=1, max_length=20)
+    Updater()
+    indicators = TimePlotIndicator(time_stamps, temperatures, title='Device Temperature [mK]')
     names_list = ('Channel 1: Sweep', 'Channel 1: Noise',
                   'Channel 2: Sweep', 'Channel 2: Noise')
     w = SweepGUI(Sweep, base_procedure_class=SweepGUIProcedure2, x_axes=x_list,
