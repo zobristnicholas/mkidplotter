@@ -1,6 +1,5 @@
 import logging
 import numpy as np
-import pandas as pd
 import pyqtgraph as pg
 
 from pymeasure.display.curves import ResultsCurve
@@ -34,16 +33,13 @@ class NoiseResultsCurve(MKIDResultsCurve):
         data = self.results.data  # get the current snapshot        
 
         # Set x-y data
-        logic = np.logical_not(pd.isnull(data[self.x]))
-        data = data[logic].reset_index()
-        x_data = data[self.x]
+        x_data = data[self.x].copy()
         y_data = data[self.y]
-        if x_data.size > 1:
+        if len(x_data) > 1:
             dx = x_data[1] - x_data[0]
-            last_point = pd.DataFrame([x_data[x_data.index[-1]] + dx], columns=[self.x])
-            x_data = pd.DataFrame(x_data, columns=[self.x])
-            x_data = x_data.append(last_point, ignore_index=True) - dx / 2
-            x_data = x_data[self.x]
+            x_data.append(x_data[-1] + dx)
+            x_data = [x - dx / 2 for x in x_data]
             self.setData(x_data, y_data, stepMode=True)
+
         else:
             self.setData(x_data, y_data, stepMode=False)

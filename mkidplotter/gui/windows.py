@@ -11,11 +11,11 @@ from pymeasure.display.Qt import QtCore, QtGui
 from pymeasure.display.widgets import LogWidget
 from pymeasure.display.manager import Experiment
 
+from mkidplotter.gui.results import Results
 from mkidplotter.gui.managers import Manager
 from mkidplotter.gui.browser import BrowserItem
 from mkidplotter.gui.procedures import SweepGUIProcedure1
 from mkidplotter.icons.manage_icons import get_image_icon
-from mkidplotter.gui.results import Results, ContinuousResults
 from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
                                      BrowserWidget, ResultsDialog, IndicatorsWidget)
 
@@ -205,13 +205,6 @@ class ManagedWindow(w.ManagedWindow):
         self.resize(1400, 1000)
 
     def browser_item_changed(self, item, column):
-        # remove excess loaded data from memory on browser change for finished experiments
-        # needed because of memory limit on 32 bit systems and memory intensive procedures
-        n_loaded = 0
-        for experiment in self.manager.experiments:
-            if experiment.procedure.status == self.procedure_class.FINISHED and experiment.results._data is not None:
-                n_loaded += 1
-        # check box logic
         if column == 0:
             state = item.checkState(0)
             experiment = self.manager.experiments.with_browser_item(item)
@@ -220,20 +213,12 @@ class ManagedWindow(w.ManagedWindow):
                 for index, plot in enumerate(self.plot):
                     for curve in experiment.curve[index]:
                         plot.removeItem(curve)
-                # remove data on uncheck if n_loaded is getting large
-                if n_loaded > 20 and experiment.results._data is not None:
-                    log.debug("Removing {} from gui memory".format(experiment.data_filename))
-                    experiment.results._data = None
             # add plot on check
             else:
                 for index, plot in enumerate(self.plot):
                     for curve in experiment.curve[index]:
                         curve.update()
                         plot.addItem(curve)
-                # remove data right after plotting if n_loaded is high enough
-                if n_loaded > 30 and experiment.results._data is not None:
-                    log.debug("Removing {} from gui memory".format(experiment.data_filename))
-                    experiment.results._data = None
 
     def new_curve(self, results, **kwargs):
         curve = [plot_widget.new_curve(results, **kwargs)
@@ -269,11 +254,6 @@ class ManagedWindow(w.ManagedWindow):
                 if curve.symbolBrush is not None:
                     curve.symbolBrush.setColor(color)
                 curve.update()
-
-    def open_file_externally(self, filename):
-        import webbrowser
-        log.info("Opening temporary file containing the plotted data")
-        webbrowser.open("file://" + filename)
 
     def resume(self):
         if self.manager.experiments.has_next():
@@ -357,13 +337,6 @@ class ManagedWindow(w.ManagedWindow):
     def define_browser_menu(self, item):
         experiment = self.manager.experiments.with_browser_item(item)
         menu = QtGui.QMenu(self)
-
-        # Open
-        action_open = QtGui.QAction(menu)
-        action_open.setText("Open Data Externally")
-        action_open.triggered.connect(
-            lambda: self.open_file_externally(experiment.results.data_filename))
-        menu.addAction(action_open)
 
         # Change Color
         action_change_color = QtGui.QAction(menu)
@@ -706,7 +679,7 @@ class SweepGUI(ManagedWindow):
                 procedure.set_parameters(parameter_values)
                 # set up the experiment
                 try:
-                    file_path = tempfile.mktemp(suffix=".txt")
+                    file_path = tempfile.mktemp(suffix=".pickle")
                     results = Results(procedure, file_path)
                     experiment = self.new_experiment(results)
                     # change the file name to the real file name if it has one
@@ -759,8 +732,8 @@ class PulseGUI(ManagedWindow):
     def queue(self):
         # make results object to hold the gui data
         procedure = self.make_procedure()  # Procedure class was passed at construction
-        file_path = tempfile.mktemp(suffix=".txt")
-        results = ContinuousResults(procedure, file_path)
+        file_path = tempfile.mktemp(suffix=".pickle")
+        results = Results(procedure, file_path)
         # make the experiment
         experiment = self.new_experiment(results)
         start_time = datetime.now().strftime("%y%m%d_%H%M%S")

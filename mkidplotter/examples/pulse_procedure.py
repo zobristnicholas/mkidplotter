@@ -46,8 +46,7 @@ class Pulse(MKIDProcedure):
                     "amplitude 1": pulse1_a[i, :],
                     "phase 2": pulse2_p[i, :],
                     "amplitude 2": pulse2_a[i, :]}
-            if i % 10 == 0:
-                self.emit("results", data, clear=True)  # clear last pulse from gui file
+            self.emit("results", data, clear=True)  # clear last pulse from gui file
             self.emit('progress', i / self.n_pulses * 100)
             log.debug("Emitting results: %s" % data)
             if self.should_stop():
@@ -108,24 +107,9 @@ class Pulse(MKIDProcedure):
         for name, value in parameter_dict.items():
             setattr(procedure, name, value)
         procedure.refresh_parameters()  # Enforce update of meta data
-        # collect the data into a numpy structured array
-        size = max([value.size if hasattr(value, "shape") and value.shape
-                    else np.array([value]).size for _, value in npz_file.items()])
-        records = np.empty((size,), dtype=[(key, float) for key in npz_file.keys()
-                                           if key != "parameters"])
-        records.fill(np.nan)
-        for key, value in npz_file.items():
-            if key != "parameters":
-                try:
-                    records[key][:value.size] = value
-                except AttributeError:
-                    records[key][:np.array(value).size] = value
-        # make a temporary file for the gui data
-        file_path = tempfile.mktemp(suffix='.txt')
+        # make a results object
+        file_path = tempfile.mktemp(suffix='.pickle')
         results = Results(procedure, file_path)
-        log.info("Loading dataset into the temporary file %s", file_path)
-        with open(file_path, mode='a') as temporary_file:
-            for index in range(size):
-                temporary_file.write(results.format(records[index]))
-                temporary_file.write(os.linesep)
+        # update the data in the results
+        results.data = dict(npz_file)
         return results
