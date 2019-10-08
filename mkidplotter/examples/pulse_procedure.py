@@ -71,7 +71,8 @@ class Pulse(MKIDProcedure):
             amplitude = np.nan
 
         # save all the data we took
-        data = {"phase 1": pulse1_p,
+        data = {"t": np.arange(self.n_points),
+                "phase 1": pulse1_p,
                 "amplitude 1": pulse1_a,
                 "phase 2": pulse2_p,
                 "amplitude 2": pulse2_a,
@@ -111,5 +112,9 @@ class Pulse(MKIDProcedure):
         file_path = tempfile.mktemp(suffix='.pickle')
         results = Results(procedure, file_path)
         # update the data in the results
-        results.data = dict(npz_file)
+        data = dict(npz_file)
+        keys = ['phase 1', 'phase 2', 'amplitude 1', 'amplitude 2']
+        for key in keys:
+            data[key] = data[key][0, :]
+        results.data = data
         return results
