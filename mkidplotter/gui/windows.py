@@ -368,7 +368,7 @@ class ManagedWindow(w.ManagedWindow):
         action_use.setText("Use These Parameters")
         action_use.triggered.connect(lambda: self.set_parameters(experiment))
         menu.addAction(action_use)
-        menu_dict = {"menu": menu, "open": action_open, "color": action_change_color,
+        menu_dict = {"menu": menu, "color": action_change_color,
                      "remove": action_remove, "use": action_use}
         return menu_dict
 
