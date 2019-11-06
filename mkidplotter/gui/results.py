@@ -69,12 +69,6 @@ class Results(results.Results):
         self.procedure_class = procedure.__class__
         self.parameters = procedure.parameter_objects()
 
-        if not isinstance(procedure, Procedure):
-            raise ValueError("Results require a Procedure object")
-        self.procedure = procedure
-        self.procedure_class = procedure.__class__
-        self.parameters = procedure.parameter_objects()
-
         if isinstance(data_filename, (list, tuple)):
             data_filenames, data_filename = data_filename, data_filename[0]
         else:
