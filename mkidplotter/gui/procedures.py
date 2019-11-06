@@ -72,7 +72,6 @@ class SweepGUIProcedure2(Procedure):
     n_temp = IntegerParameter("# of Points", default=1, minimum=1, maximum=1000)
 
 
-# TODO: make sure procedures are pickleable so the results cache can properly save them
 class MKIDProcedure(Procedure):
     # optional daq from analogreadout connect to the class with connect_daq()
     daq = None

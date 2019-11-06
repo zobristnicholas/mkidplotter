@@ -1,6 +1,8 @@
 import os
+import sys
 import pickle
 import logging
+import importlib
 import pandas as pd
 from collections import OrderedDict
 
@@ -76,10 +78,16 @@ class Results(results.Results):
 
         self.data_filename = data_filename
         self.data_filenames = data_filenames
-        data = {"_procedure": self.procedure}
-        data.update({key: [] for key in procedure.DATA_COLUMNS})
-        _results_cache.add(data_filename, data)
+        self.data = {}
         self.formatter = None
+
+    def __getstate__(self):
+        return self.data
+
+    def __setstate__(self, state):
+        procedure = self.create_procedure(state)
+        r = Results(procedure, state["_data_filename"])
+        self.__dict__.update(r.__dict__.copy())
 
     @property
     def data(self):
@@ -89,7 +97,8 @@ class Results(results.Results):
     def data(self, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("data object must be set as a dictionary")
-        data = {"_procedure": self.procedure}
+        data = {"_parameters": self.procedure.parameter_values(), "_class": self.procedure.__class__.__name__,
+                "_module": self.procedure.__module__, "_data_filename": self.data_filename}
         data.update({key: [] for key in self.procedure.DATA_COLUMNS})
         _results_cache.add(self.data_filename, data)
         for key, value in dictionary.items():
@@ -105,7 +114,18 @@ class Results(results.Results):
             self.procedure.__class__.__name__)
 
     @staticmethod
-    def load(data_filename, procedure_class=None):
+    def create_procedure(data):
+        # get the class
+        module = importlib.import_module(data["_module"])
+        cls = getattr(module, data["_class"])
+        # restore the procedure
+        procedure = cls()
+        procedure.set_parameters(data["_parameters"])
+        procedure.refresh_parameters()
+        return procedure
+
+    @classmethod
+    def load(cls, data_filename, procedure_class=None):
         """ Returns a Results object with the associated Procedure object and
         data
         """
@@ -114,8 +134,10 @@ class Results(results.Results):
         if procedure_class is not None:
             procedure = procedure_class()
         else:
-            procedure = data["_procedure"]
-        return Results(procedure, data_filename)
+            procedure = cls.create_procedure(data)
+        r = cls(procedure, data_filename)
+        r.data = data
+        return r
 
     def header(self):
         raise NotImplementedError
