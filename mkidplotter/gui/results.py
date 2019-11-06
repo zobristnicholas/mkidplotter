@@ -34,9 +34,7 @@ class ResultsHolder:
             with open(item, "rb") as f:
                 data = pickle.load(f)
             log.debug("loaded: {}".format(item))
-            self._files[item] = data
-            log.debug("saved to cache: {}".format(item))
-            self._check_size()
+            self.add(item, data)
             return self._files[item]
         else:
             raise ValueError("the requested item was not in the cache or saved to disk")
