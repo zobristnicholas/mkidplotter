@@ -398,34 +398,36 @@ class ManagedWindow(w.ManagedWindow):
         if dialog.exec_():
             file_names = dialog.selectedFiles()
             self.load_from_file(file_names)
-
     def load_from_file(self, file_names):
         for file_name in map(str, file_names):
-            if file_name in self.manager.experiments:
-                message = "The file %s cannot be opened twice."
-                QtGui.QMessageBox.warning(self, "Load Error",
-                                          message % os.path.basename(file_name))
-                log.warning(message, os.path.basename(file_name))
-            elif file_name == '':
-                return
-            else:
-                try:
-                    results = self.procedure_class().load(file_name)
-                except AttributeError:
-                    results = Results.load(file_name)
-                results.procedure.status = SweepGUIProcedure1.FINISHED
-                experiment = self.new_experiment(results)
-                for index, _ in enumerate(self.plot):
-                    for _, curve in enumerate(experiment.curve[index]):
-                        curve.update()
-                experiment.data_filename = os.path.basename(file_name)
-                experiment.browser_item.setText(1, os.path.basename(file_name))
-                experiment.browser_item.progressbar.setValue(100.)
-                self.manager.load(experiment)
-                log.info('Opened data file %s' % file_name)
-                self.browser_widget.show_button.setEnabled(True)
-                self.browser_widget.hide_button.setEnabled(True)
-                self.browser_widget.clear_button.setEnabled(True)
+            try:
+                if file_name in self.manager.experiments:
+                    message = "The file %s cannot be opened twice."
+                    QtGui.QMessageBox.warning(self, "Load Error",
+                                              message % os.path.basename(file_name))
+                    log.warning(message, os.path.basename(file_name))
+                elif file_name == '':
+                    return
+                else:
+                    try:
+                        results = self.procedure_class().load(file_name)
+                    except AttributeError:
+                        results = Results.load(file_name)
+                    results.procedure.status = SweepGUIProcedure1.FINISHED
+                    experiment = self.new_experiment(results)
+                    for index, _ in enumerate(self.plot):
+                        for _, curve in enumerate(experiment.curve[index]):
+                            curve.update()
+                    experiment.data_filename = os.path.basename(file_name)
+                    experiment.browser_item.setText(1, os.path.basename(file_name))
+                    experiment.browser_item.progressbar.setValue(100.)
+                    self.manager.load(experiment)
+                    log.info('Opened data file %s' % file_name)
+                    self.browser_widget.show_button.setEnabled(True)
+                    self.browser_widget.hide_button.setEnabled(True)
+                    self.browser_widget.clear_button.setEnabled(True)
+            except Exception:
+                log.exception("'{}' could not be loaded".format(file_name))
         self.update_browser_column_width()
 
     def update_browser_column_width(self):
@@ -584,7 +586,7 @@ class SweepGUI(ManagedWindow):
         if self.manager.is_running():
             if self.manager.running_experiment() == experiment:  # Experiment running
                action_open_pulse.setEnabled(False)
-        action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(experiment))
+        action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(self, experiment))
         
         menu.addAction(action_open_pulse)
         menu_dict['pulse'] = action_open_pulse

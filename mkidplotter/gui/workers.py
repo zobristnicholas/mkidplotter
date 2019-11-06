@@ -23,7 +23,7 @@ class Worker(w.Worker):
     def emit(self, topic, record, clear=False):
         try:
             self.publisher.send_serialized((topic, record), serialize=cloudpickle.dumps)
-        except (NameError, AttributeError):
+        except (NameError, AttributeError, TypeError):
             pass  # No dumps defined
         if topic == 'results':
             for key, value in record.items():
