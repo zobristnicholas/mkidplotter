@@ -50,7 +50,7 @@ def sweep_window():
     w = SweepGUI(Sweep, base_procedure_class=SweepGUIProcedure2, x_axes=x_list,
                  y_axes=y_list, x_labels=x_label, y_labels=y_label,
                  legend_text=legend_list, plot_widget_classes=widgets_list,
-                 plot_names=names_list, persistent_indicators=indicators)
+                 plot_names=names_list, persistent_indicators=indicators, log_level="DEBUG")
     return w
 
 

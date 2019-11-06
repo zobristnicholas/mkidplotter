@@ -18,7 +18,7 @@ def pulse_window():
                   'Channel 2: Data', 'Channel 2: Noise')
     w = PulseGUI(Pulse, x_axes=x_list, y_axes=y_list, x_labels=x_label, y_labels=y_label,
                  legend_text=legend_list, plot_widget_classes=widgets_list,
-                 plot_names=names_list)
+                 plot_names=names_list, log_level="DEBUG")
     return w
 
 
