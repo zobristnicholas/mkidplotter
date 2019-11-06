@@ -398,6 +398,7 @@ class ManagedWindow(w.ManagedWindow):
         if dialog.exec_():
             file_names = dialog.selectedFiles()
             self.load_from_file(file_names)
+
     def load_from_file(self, file_names):
         for file_name in map(str, file_names):
             try:
