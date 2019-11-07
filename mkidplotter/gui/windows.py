@@ -265,7 +265,7 @@ class ManagedWindow(w.ManagedWindow):
                 curve.update()
 
     def resume(self):
-        if self.manager.experiments.has_next():
+        if self.manager.experiments.has_next() and not self.manager.is_running():
             self.abort_button.setText("Abort")
             self.abort_button.clicked.disconnect()
             self.abort_button.clicked.connect(self.abort)
