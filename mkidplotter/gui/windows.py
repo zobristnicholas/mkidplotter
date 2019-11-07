@@ -456,7 +456,7 @@ class ManagedWindow(w.ManagedWindow):
                     self.abort()
                 self.resume()
         # try to close the DAC
-        self.close_procedure()
+        self.close_window()
         self.closing = True
         event.accept()
         
@@ -466,7 +466,7 @@ class ManagedWindow(w.ManagedWindow):
     def save_as_default(self):
         raise NotImplementedError
 
-    def close_procedure(self):
+    def close_window(self):
         try:
             self.procedure_class.close()
         except AttributeError:
@@ -737,12 +737,14 @@ class SweepGUI(ManagedWindow):
         save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
         self.save_config(save_name, sweep_dict, parameter_dict)
         
-    def close_procedure(self):
+    def close_window(self):
         if self.pulse_window is None or not self.pulse_window.isVisible():
             try:
                 self.procedure_class.close()
             except AttributeError:
                 pass
+        if self.pulse_window is not None and self.pulse_window.sweep_window is not None:
+            self.pulse_window.sweep_window = None  # remove reference to window that is closing
 
 
 class PulseGUI(ManagedWindow):
@@ -811,9 +813,11 @@ class PulseGUI(ManagedWindow):
         if file_name:
             self.set_config(file_name)
             
-    def close_procedure(self):
+    def close_window(self):
         if self.sweep_window is None or not self.sweep_window.isVisible():
             try:
                 self.procedure_class.close()
             except AttributeError:
                 pass
+        if self.sweep_window is not None and self.sweep_window.pulse_window is not None:
+            self.sweep_window.pulse_window = None  # remove reference to window that is closing
