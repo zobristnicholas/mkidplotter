@@ -387,7 +387,7 @@ class IndicatorsWidget(QtGui.QWidget):
     def _add_widget(self, name, vbox):
         indicators = self._procedure.indicator_objects
         widget = getattr(self, name)
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         if not isinstance(widget, self.NO_LABEL_INPUTS):
             label = QtGui.QLabel(self)
             label.setText("%s:" % indicators[name].name)
@@ -480,7 +480,7 @@ class InputsWidget(widgets.InputsWidget):
     def _add_widget(self, name, vbox):
         parameters = self._procedure.parameter_objects()
         widget = getattr(self, name)
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         if not isinstance(widget, self.NO_LABEL_INPUTS):
             label = QtGui.QLabel(self)
             label.setText("%s:" % parameters[name].name)

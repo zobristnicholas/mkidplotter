@@ -48,7 +48,7 @@ class FileInput(QtGui.QWidget, inputs.Input):
         if parameter.name:
             self.label.setText(self.parameter.name +":")
             vbox.addWidget(self.label)
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         hbox.addWidget(self.button)
         hbox.addWidget(self.line_edit)
         vbox.addLayout(hbox)
@@ -132,7 +132,7 @@ class NoiseInput(QtGui.QFrame, inputs.Input):
             QtGui.QWidget.__init__(self, parent=parent, **kwargs)
             inputs.Input.__init__(self, parameter)
         self._layout()
-        
+
     def _setup_ui(self):
         self.take_noise = inputs.BooleanInput(BooleanParameter("Take Data"))
         self.take_noise.stateChanged.connect(self.noise_state)
@@ -149,36 +149,35 @@ class NoiseInput(QtGui.QFrame, inputs.Input):
         vbox.setSpacing(6)
         left, top, right, bottom = vbox.getContentsMargins()
         vbox.setContentsMargins(left, top // 2, right, bottom // 2)
-        
+
         label = QtGui.QLabel(self)
         label.setText(self.parameter.name +":")
         vbox.addWidget(label)
         
         vbox.addWidget(self.take_noise)
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         label = QtGui.QLabel(self)
         label.setText("%s:" % self.integration.parameter.name)
         hbox.addWidget(label)
         hbox.addWidget(self.integration)
         vbox.addLayout(hbox)
-        
-        hbox = QtGui.QHBoxLayout(self)
+        hbox = QtGui.QHBoxLayout()
         label = QtGui.QLabel(self)
         label.setText("%s:" % self.n_int.parameter.name)
         hbox.addWidget(label)
         hbox.addWidget(self.n_int)
         vbox.addLayout(hbox)
-        
+
         if self._populate_off_resonance:
             vbox.addWidget(self.off_resonance)
-            hbox = QtGui.QHBoxLayout(self)
+            hbox = QtGui.QHBoxLayout()
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.offset.parameter.name)
             hbox.addWidget(label)
             hbox.addWidget(self.offset)
             vbox.addLayout(hbox)
 
-            hbox = QtGui.QHBoxLayout(self)
+            hbox = QtGui.QHBoxLayout()
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.n_off.parameter.name)
             hbox.addWidget(label)

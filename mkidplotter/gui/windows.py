@@ -124,8 +124,8 @@ class ManagedWindow(w.ManagedWindow):
         self.browser_widget.hide_button.clicked.connect(self.hide_experiments)
         self.browser_widget.clear_button.clicked.connect(self.clear_experiments)
         self.browser_widget.open_button.clicked.connect(self.open_experiment)
-        self.browser = self.browser_widget.browser
 
+        self.browser = self.browser_widget.browser
         self.browser.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.browser.customContextMenuRequested.connect(self.browser_item_menu)
         self.browser.itemChanged.connect(self.browser_item_changed)
