@@ -404,8 +404,7 @@ class InputsWidget(widgets.InputsWidget):
     Fixes set_parameters bug in pymeasure (would always set to default if existed).
     Puts NoiseWidget last in layout column."""
     NO_LABEL_INPUTS = (BooleanInput, DirectoryInput, FileInput, BooleanListInput, NoiseInput)
-    
-    
+
     def set_parameters(self, parameter_objects):
         for name in self._inputs:
             parameter = parameter_objects[name]
