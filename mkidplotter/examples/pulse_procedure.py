@@ -16,7 +16,7 @@ class Pulse(MKIDProcedure):
     frequency2 = FloatParameter("Ch 2 Center Frequency", units="GHz", default=4.0)
     attenuation = FloatParameter("DAC Attenuation", units="dB", default=0)
     noise = VectorParameter("Noise", default=[1, 1, 10], ui_class=NoiseInput)
-    n_points = IntegerParameter("Number of Points", default=500)
+    n_trace = IntegerParameter("Number of Points", default=500)
     n_pulses = IntegerParameter("Number of Pulses", default=100)
     ui = BooleanListInput.set_labels(["808 nm", "920 nm", "980 nm", "1120 nm", "1310 nm"])  # class factory
     laser = VectorParameter("Laser", default=[0, 0, 0, 0, 0], length=5, ui_class=ui)
@@ -30,18 +30,18 @@ class Pulse(MKIDProcedure):
         self.update_metadata()
 
     def execute(self):
-        log.info("Measuring the loop with %d points", self.n_points)
-        pulse1_p = np.zeros((self.n_pulses, self.n_points))
-        pulse1_a = np.zeros((self.n_pulses, self.n_points))
-        pulse2_p = np.zeros((self.n_pulses, self.n_points))
-        pulse2_a = np.zeros((self.n_pulses, self.n_points))
+        log.info("Measuring the loop with %d points", self.n_trace)
+        pulse1_p = np.zeros((self.n_pulses, self.n_trace))
+        pulse1_a = np.zeros((self.n_pulses, self.n_trace))
+        pulse2_p = np.zeros((self.n_pulses, self.n_trace))
+        pulse2_a = np.zeros((self.n_pulses, self.n_trace))
         # take pulse data
         for i in np.arange(self.n_pulses):
-            pulse1_p[i, :] = np.random.random_sample(self.n_points)
-            pulse1_a[i, :] = np.random.random_sample(self.n_points) + 10
-            pulse2_p[i, :] = np.random.random_sample(self.n_points)
-            pulse2_a[i, :] = np.random.random_sample(self.n_points) + 10
-            data = {"t": np.arange(self.n_points),
+            pulse1_p[i, :] = np.random.random_sample(self.n_trace)
+            pulse1_a[i, :] = np.random.random_sample(self.n_trace) + 10
+            pulse2_p[i, :] = np.random.random_sample(self.n_trace)
+            pulse2_a[i, :] = np.random.random_sample(self.n_trace) + 10
+            data = {"t": np.arange(self.n_trace),
                     "phase 1": pulse1_p[i, :],
                     "amplitude 1": pulse1_a[i, :],
                     "phase 2": pulse2_p[i, :],
@@ -71,7 +71,7 @@ class Pulse(MKIDProcedure):
             amplitude = np.nan
 
         # save all the data we took
-        data = {"t": np.arange(self.n_points),
+        data = {"t": np.arange(self.n_trace),
                 "phase 1": pulse1_p,
                 "amplitude 1": pulse1_a,
                 "phase 2": pulse2_p,
