@@ -588,11 +588,10 @@ class SweepGUI(ManagedWindow):
             if self.manager.running_experiment() == experiment:  # Experiment running
                 action_open_pulse.setEnabled(False)
 
-        if self.pulse_window is not None:
-            action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(self, experiment))
+        action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(experiment))
 
-            menu.addAction(action_open_pulse)
-            menu_dict['pulse'] = action_open_pulse
+        menu.addAction(action_open_pulse)
+        menu_dict['pulse'] = action_open_pulse
         
         return menu_dict
         
