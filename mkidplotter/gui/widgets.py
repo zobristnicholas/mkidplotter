@@ -263,9 +263,28 @@ class PulsePlotWidget(PlotWidget):
         self.plot.setAspectLocked(True)
 
 
-class ScatterPlotWidget(PulsePlotWidget):
+class ScatterPlotWidget(PlotWidget):
     """Plot widget for pulse amplitudes"""
-    pass
+    def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
+                 y_label=None, legend_text=None, **kwargs):
+        self.x_axes = x_axes
+        self.y_axes = y_axes
+        self.x_label = x_label
+        self.y_label = y_label
+        self.legend_text = legend_text
+        self._point_size = 6
+        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(None)],
+                           "symbol": ['o', '+'],
+                           "symbolPen": [pg.mkPen(None), pg.mkPen(None)],
+                           "symbolBrush": [pg.mkBrush(color='k'), pg.mkBrush(color='k')],
+                           "symbolSize": [self._point_size, self._point_size],
+                           "pxMode": [True, True]}
+        n = int(np.ceil(len(self.x_axes) / len(self.line_style["pen"])))
+        self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
+        # add transparency
+        color_cycle = cycler(color=[tuple(list(value) + [50]) for value in color_cycle.by_key()['color']])
+        self.cycler = (color_cycle * self.style_cycle)()
+        super().__init__(*args, **kwargs)
 
 
 class HistogramPlotWidget(PlotWidget):

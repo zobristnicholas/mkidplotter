@@ -61,9 +61,6 @@ class NoiseResultsCurve(MKIDResultsCurve):
             x_data = [x - dx / 2 for x in x_data]
             self.setData(x_data, y_data, stepMode=True)
 
-        elif len(x_data) == len(y_data):
-            self.setData(x_data, y_data, stepMode=False)
-
 
 class HistogramResultsCurve(MKIDResultsCurve):
     """Extension of the pymeasure ResultsCurve class"""
