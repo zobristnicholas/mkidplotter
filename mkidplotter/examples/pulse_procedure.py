@@ -22,7 +22,7 @@ class Pulse(MKIDProcedure):
     laser = VectorParameter("Laser", default=[0, 0, 0, 0, 0], length=5, ui_class=ui)
 
     DATA_COLUMNS = ['t', 'phase 1', 'amplitude 1', 'phase 2', 'amplitude 2', 'frequency',
-                    'phase PSD1', 'amplitude PSD1', 'phase PSD2', 'amplitude PSD2']
+                    'phase PSD1', 'amplitude PSD1', 'phase PSD2', 'amplitude PSD2', "amplitudes x", "amplitudes y"]
     wait_time = 0.1
 
     def startup(self):
@@ -36,16 +36,21 @@ class Pulse(MKIDProcedure):
         pulse2_p = np.zeros((self.n_pulses, self.n_trace))
         pulse2_a = np.zeros((self.n_pulses, self.n_trace))
         # take pulse data
+        peaks = []
         for i in np.arange(self.n_pulses):
             pulse1_p[i, :] = np.random.random_sample(self.n_trace)
             pulse1_a[i, :] = np.random.random_sample(self.n_trace) + 10
             pulse2_p[i, :] = np.random.random_sample(self.n_trace)
             pulse2_a[i, :] = np.random.random_sample(self.n_trace) + 10
+            peaks.append(np.random.randn())
+            counts, bins = np.histogram(peaks, bins='auto', density=True)
             data = {"t": np.arange(self.n_trace),
                     "phase 1": pulse1_p[i, :],
                     "amplitude 1": pulse1_a[i, :],
                     "phase 2": pulse2_p[i, :],
-                    "amplitude 2": pulse2_a[i, :]}
+                    "amplitude 2": pulse2_a[i, :],
+                    "amplitudes x": bins,
+                    "amplitudes y": counts}
             self.emit("results", data, clear=True)  # clear last pulse from gui file
             self.emit('progress', i / self.n_pulses * 100)
             log.debug("Emitting results: %s" % data)

@@ -359,7 +359,7 @@ class ManagedWindow(w.ManagedWindow):
         action_remove.setText("Remove Graph")
         if self.manager.is_running():
             if self.manager.running_experiment() == experiment:  # Experiment running
-               action_remove.setEnabled(False)
+                action_remove.setEnabled(False)
         action_remove.triggered.connect(lambda: self.remove_experiment(experiment))
         menu.addAction(action_remove)
 

@@ -15,7 +15,7 @@ from pymeasure.display.inputs import IntegerInput, BooleanInput, ListInput, Stri
 from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParameter, ListParameter, Parameter
 
 from mkidplotter.gui.displays import StringDisplay, FloatDisplay
-from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve
+from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve, HistogramResultsCurve
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
 from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput,
@@ -233,6 +233,7 @@ class TransmissionPlotWidget(SweepPlotWidget):
 
 
 class PulsePlotWidget(PlotWidget):
+    """Plot widget for pulse IQ data"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
                  y_label=None, legend_text=None, **kwargs):
         self.x_axes = x_axes
@@ -260,6 +261,31 @@ class PulsePlotWidget(PlotWidget):
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(True)
+
+
+class ScatterPlotWidget(PulsePlotWidget):
+    """Plot widget for pulse amplitudes"""
+    pass
+
+
+class HistogramPlotWidget(PlotWidget):
+    """Plot widget for histogramming pulse amplitudes"""
+
+    def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
+                 y_label=None, legend_text=None, **kwargs):
+        self.x_axes = x_axes
+        self.y_axes = y_axes
+        self.x_label = x_label
+        self.y_label = y_label
+        self.legend_text = legend_text
+        self._point_size = 6
+        self.line_style = {"pen": [pg.mkPen(color='w', width=2), pg.mkPen(color='w', width=2),
+                                   pg.mkPen(color='w', width=2), pg.mkPen(color='w', width=2)]}
+        n = int(np.ceil(len(self.x_axes) / len(self.line_style["pen"])))
+        self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
+        self.cycler = (color_cycle * self.style_cycle)()
+        super().__init__(*args, **kwargs)
+        self.curve_class = HistogramResultsCurve
 
 
 class NoisePlotWidget(PlotWidget):

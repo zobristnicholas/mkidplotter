@@ -81,7 +81,7 @@ class DirectoryInput(FileInput):
         current = self.value()
         file_name = QtGui.QFileDialog.getExistingDirectory(parent=self, directory=current)
         if file_name:
-            file_name = os.path.abspath(file_name)  # format seperators
+            file_name = os.path.abspath(file_name)  # format separators
             self.setValue(file_name)
 
 

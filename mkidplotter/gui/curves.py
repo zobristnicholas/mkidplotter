@@ -63,3 +63,20 @@ class NoiseResultsCurve(MKIDResultsCurve):
 
         elif len(x_data) == len(y_data):
             self.setData(x_data, y_data, stepMode=False)
+
+
+class HistogramResultsCurve(MKIDResultsCurve):
+    """Extension of the pymeasure ResultsCurve class"""
+
+    def update(self):
+        """Updates the data by polling the results"""
+        if self.force_reload:
+            self.results.reload()
+        data = self.results.data  # get the current snapshot
+
+        # Set x-y data
+        x_data = data[self.x].copy()
+        y_data = data[self.y]
+        if len(x_data) == len(y_data) + 1:
+            self.setData(x_data, y_data, stepMode=True)
+
