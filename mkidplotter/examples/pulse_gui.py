@@ -10,11 +10,11 @@ def pulse_window():
               ('t', 't'), ('frequency', 'frequency'), ('peaks 1',))
     y_list = (('phase 1', 'amplitude 1'), ("phase PSD1", "amplitude PSD1"), ('hist y',),
               ('phase 2', 'amplitude 2'), ("phase PSD2", "amplitude PSD2"), ('peaks 2',))
-    x_label = ("time [µs]", "frequency [Hz]", "Amplitudes", "time [µs]", "frequency [Hz]", "Channel 1 Amplitudes")
+    x_label = ("time [µs]", "frequency [Hz]", "amplitudes", "time [µs]", "frequency [Hz]", "Channel 1 Amplitudes")
     y_label = ("signal [V]", "PSD [V² / Hz]", "probability density", "signal [V]", "PSD [V² / Hz]",
                "Channel 2 Amplitudes")
-    legend_list = (('phase', 'amplitude'), ('phase Noise', 'amplitude Noise'), None,
-                   ('phase', 'amplitude'), ('phase Noise', 'amplitude Noise'), None)
+    legend_list = (('phase', 'amplitude'), ('phase noise', 'amplitude noise'), None,
+                   ('phase', 'amplitude'), ('phase noise', 'amplitude noise'), None)
     widgets_list = (PulsePlotWidget, NoisePlotWidget, HistogramPlotWidget, PulsePlotWidget, NoisePlotWidget,
                     ScatterPlotWidget)
     names_list = ('Channel 1: Data', 'Channel 1: Noise', 'Channel1: Amplitudes',
