@@ -13,5 +13,6 @@ setup(name='mkidplotter',
                         "pyqtgraph",
                         "cycler",
                         "pytest",
-                        "pytest-qt"],
+                        "pytest-qt",
+                        "toml"],
       zip_safe=False)
