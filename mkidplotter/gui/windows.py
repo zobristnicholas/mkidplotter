@@ -524,7 +524,7 @@ class SweepGUI(ManagedWindow):
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         if not os.path.isdir(directory):
             os.mkdir(directory)
-        file_path = os.path.join(directory, "sweep_default.npz")
+        file_path = os.path.join(directory, "sweep_default.toml")
         if os.path.isfile(file_path):
             self.set_config(file_path)
 
@@ -606,7 +606,7 @@ class SweepGUI(ManagedWindow):
     @staticmethod
     def save_config(save_name, sweep_dict, parameter_dict):
         with open(save_name, "w") as f:
-            toml.dump({"sweep_dict": sweep_dict, "parameter_dict": parameter_dict})
+            toml.dump({"sweep_dict": sweep_dict, "parameter_dict": parameter_dict}, f)
 
     def load_config(self):
         sweep_procedure = self.base_inputs_widget.get_procedure()
@@ -634,7 +634,7 @@ class SweepGUI(ManagedWindow):
         ignore_parameters = [params[0] for params in self.sweep_inputs]
         ignore_parameters += [param for params in self.frequency_inputs
                               for param in params]
-        for key, value in parameter_dict[files[0]]:
+        for key, value in parameter_dict[files[0]].items():
             if key not in ignore_parameters and key in parameters.keys():
                 parameters[key].value = value
         self.inputs.set_parameters(parameters)
@@ -646,7 +646,7 @@ class SweepGUI(ManagedWindow):
         parameter_values = procedure.parameter_values()
         parameter_dict = {"default": parameter_values}
         directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, "sweep_default.npz")
+        file_path = os.path.join(directory, "sweep_default.toml")
         log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, sweep_dict, parameter_dict)
 
