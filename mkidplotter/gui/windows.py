@@ -613,7 +613,7 @@ class SweepGUI(ManagedWindow):
         sweep_dict = sweep_procedure.parameter_values()
         directory = sweep_dict[self.directory_inputs]
         file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
-                                                      "Config files (config_sweep*.npz)")
+                                                      "Config files (config_sweep*.toml)")
         if file_name:
             self.set_config(file_name)
 
@@ -738,7 +738,7 @@ class SweepGUI(ManagedWindow):
                 except Exception:
                     log.error('Failed to queue experiment', exc_info=True)
         self.update_browser_column_width()
-        save_name = os.path.join(directory, "config_sweep_" + start_time + ".npz")
+        save_name = os.path.join(directory, "config_sweep_" + start_time + ".toml")
         self.save_config(save_name, sweep_dict, parameter_dict)
         
     def close_window(self):
@@ -762,7 +762,7 @@ class PulseGUI(ManagedWindow):
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         if not os.path.isdir(directory):
             os.mkdir(directory)
-        file_path = os.path.join(directory, "pulse_default.npz")
+        file_path = os.path.join(directory, "pulse_default.toml")
         if os.path.isfile(file_path):
             self.set_config(file_path)
             
@@ -781,7 +781,7 @@ class PulseGUI(ManagedWindow):
         self.manager.queue(experiment)
         # do some post queuing stuff
         self.update_browser_column_width()
-        save_name = os.path.join(experiment.procedure.directory, "config_pulse_" + start_time + ".npz")
+        save_name = os.path.join(experiment.procedure.directory, "config_pulse_" + start_time + ".toml")
         parameter_dict = experiment.procedure.parameter_values()
         self.save_config(save_name, parameter_dict)
 
@@ -806,7 +806,7 @@ class PulseGUI(ManagedWindow):
         procedure = self.make_procedure()
         parameter_dict = procedure.parameter_values()
         directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, "pulse_default.npz")
+        file_path = os.path.join(directory, "pulse_default.toml")
         log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, parameter_dict)
         
@@ -816,7 +816,7 @@ class PulseGUI(ManagedWindow):
             directory = procedure.directory
         except AttributeError:
             directory = ""
-        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory, "Config files (config_pulse*.npz)")
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory, "Config files (config_pulse*.toml)")
         if file_name:
             self.set_config(file_name)
             
