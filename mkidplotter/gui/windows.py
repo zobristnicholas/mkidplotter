@@ -1,4 +1,5 @@
 import os
+import toml
 import copy
 import logging
 import tempfile
@@ -604,7 +605,8 @@ class SweepGUI(ManagedWindow):
 
     @staticmethod
     def save_config(save_name, sweep_dict, parameter_dict):
-        np.savez(save_name, sweep_dict=sweep_dict, parameter_dict=parameter_dict)
+        with open(save_name, "w") as f:
+            toml.dump({"sweep_dict": sweep_dict, "parameter_dict": parameter_dict})
 
     def load_config(self):
         sweep_procedure = self.base_inputs_widget.get_procedure()
@@ -617,21 +619,22 @@ class SweepGUI(ManagedWindow):
 
     def set_config(self, file_name):
         log.info("loading configuration from {}".format(file_name))
-        npz_file = load(file_name, allow_pickle=True)
+        with open(file_name, "r") as f:
+            config = toml.load(f)
         # set sweep parameters
-        sweep_dict = npz_file['sweep_dict'].item()
+        sweep_dict = config['sweep_dict']
         sweep_parameters = self.base_procedure_class().parameter_objects()
         for key, value in sweep_dict.items():
             sweep_parameters[key].value = value
         self.base_inputs_widget.set_parameters(sweep_parameters)
         # set additional parameters
-        parameter_dict = npz_file['parameter_dict'].item()
+        parameter_dict = config['parameter_dict']
         files = list(parameter_dict.keys())
         parameters = self.make_procedure().parameter_objects()
         ignore_parameters = [params[0] for params in self.sweep_inputs]
         ignore_parameters += [param for params in self.frequency_inputs
                               for param in params]
-        for key, value in parameter_dict[files[0]].items():
+        for key, value in parameter_dict[files[0]]:
             if key not in ignore_parameters and key in parameters.keys():
                 parameters[key].value = value
         self.inputs.set_parameters(parameters)
@@ -785,11 +788,14 @@ class PulseGUI(ManagedWindow):
     @staticmethod
     def save_config(save_name, parameter_dict):
         np.savez(save_name, parameter_dict=parameter_dict)
+        with open(save_name, "w") as f:
+            toml.dump({"parameter_dict": parameter_dict}, f)
     
     def set_config(self, file_name):
         log.info("loading configuration from {}".format(file_name))
-        npz_file = load(file_name, allow_pickle=True)
-        parameter_dict = npz_file['parameter_dict'].item()
+        with open(file_name, "r") as f:
+            config = toml.load(f)
+        parameter_dict = config['parameter_dict']
         parameters = self.make_procedure().parameter_objects()
         for key, value in parameter_dict.items():
             if key in parameters.keys():
