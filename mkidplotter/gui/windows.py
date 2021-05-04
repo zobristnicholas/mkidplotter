@@ -612,8 +612,8 @@ class SweepGUI(ManagedWindow):
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
         directory = sweep_dict[self.directory_inputs]
-        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
-                                                      "Config files (config_sweep*.toml)")
+        file_name, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
+                                                         "Config files (config_sweep*.toml)")
         if file_name:
             self.set_config(file_name)
 
