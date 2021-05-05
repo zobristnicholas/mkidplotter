@@ -46,10 +46,9 @@ def load(file_name, **kwargs):
     return npz_file
 
 
-# TODO: fix memory leak
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
-                 plot_widget_classes=(), plot_names=(), persistent_indicators=(), **kwargs):
+                 plot_widget_classes=(), plot_names=(), persistent_indicators=(), name="", **kwargs):
         if not inputs:
             inputs = tuple(procedure_class().parameter_names)
 
@@ -63,6 +62,7 @@ class ManagedWindow(w.ManagedWindow):
         self.x_labels = x_labels
         self.y_labels = y_labels
         self.legend_text = legend_text
+        self.name = name
         if isinstance(persistent_indicators, (tuple, list)):
             self.persistent_indicators = persistent_indicators
         else:
@@ -524,7 +524,7 @@ class SweepGUI(ManagedWindow):
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         if not os.path.isdir(directory):
             os.mkdir(directory)
-        file_path = os.path.join(directory, "sweep_default.toml")
+        file_path = os.path.join(directory, f"sweep_default_{self.name}.toml")
         if os.path.isfile(file_path):
             self.set_config(file_path)
 
@@ -646,7 +646,7 @@ class SweepGUI(ManagedWindow):
         parameter_values = procedure.parameter_values()
         parameter_dict = {"default": parameter_values}
         directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, "sweep_default.toml")
+        file_path = os.path.join(directory, f"sweep_default_{self.name}.toml")
         log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, sweep_dict, parameter_dict)
 
@@ -762,7 +762,7 @@ class PulseGUI(ManagedWindow):
         directory = os.path.join(os.path.dirname(__file__), "user_data")
         if not os.path.isdir(directory):
             os.mkdir(directory)
-        file_path = os.path.join(directory, "pulse_default.toml")
+        file_path = os.path.join(directory, f"pulse_default_{self.name}.toml")
         if os.path.isfile(file_path):
             self.set_config(file_path)
             
@@ -806,7 +806,7 @@ class PulseGUI(ManagedWindow):
         procedure = self.make_procedure()
         parameter_dict = procedure.parameter_values()
         directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, "pulse_default.toml")
+        file_path = os.path.join(directory, f"pulse_default_{self.name}.toml")
         log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, parameter_dict)
         
