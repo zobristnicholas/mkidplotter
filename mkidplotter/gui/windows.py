@@ -787,7 +787,6 @@ class PulseGUI(ManagedWindow):
 
     @staticmethod
     def save_config(save_name, parameter_dict):
-        np.savez(save_name, parameter_dict=parameter_dict)
         with open(save_name, "w") as f:
             toml.dump({"parameter_dict": parameter_dict}, f)
     
