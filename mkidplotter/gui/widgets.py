@@ -331,7 +331,9 @@ class NoisePlotWidget(PlotWidget):
         self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
         self.cycler = (color_cycle * self.style_cycle)()
         super().__init__(*args, **kwargs)
-        self.plot.setLogMode(True, True)
+        # pyqtgraph version 0.12.1 log scaling in y is broken so we do it manually here
+        # see also curves.NoiseResultsCurve, and y axis units in the config file
+        self.plot.setLogMode(True, False)
         self.curve_class = NoiseResultsCurve
 
 

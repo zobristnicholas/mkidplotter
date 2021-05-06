@@ -59,7 +59,9 @@ class NoiseResultsCurve(MKIDResultsCurve):
             dx = x_data[1] - x_data[0]
             x_data.append(x_data[-1] + dx)
             x_data = [x - dx / 2 for x in x_data]
-            self.setData(x_data, y_data, stepMode=True)
+            # pyqtgraph version 0.12.1 log scaling in y is broken so we do it manually here
+            # see also widgets.NoisePlotWidget, and y axis units in the config file
+            self.setData(x_data, np.log10(y_data), stepMode=True)
 
 
 class HistogramResultsCurve(MKIDResultsCurve):
