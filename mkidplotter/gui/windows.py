@@ -4,6 +4,7 @@ import copy
 import logging
 import tempfile
 import numpy as np
+import pyqtgraph as pg
 from cycler import cycler
 from datetime import datetime
 from contextlib import contextmanager
@@ -257,12 +258,13 @@ class ManagedWindow(w.ManagedWindow):
         experiment.browser_item.setIcon(0, QtGui.QIcon(pixelmap))
         self.browser.itemChanged.connect(self.browser_item_changed)
         # update all of the curves
-        for index, _ in enumerate(self.plot):
-            for _, curve in enumerate(experiment.curve[index]):
+        for index, p in enumerate(self.plot):
+            for curve in experiment.curve[index]:
                 if curve.pen is not None:
                     curve.pen.setColor(color)
                 if curve.symbolBrush is not None:
-                    curve.symbolBrush.setColor(color)
+                    # symbolBrush.setColor() doesn't work as of pyqtgraph 0.12.1
+                    curve.setSymbolBrush(pg.mkBrush(color=color))
                 curve.update()
 
     def resume(self):
