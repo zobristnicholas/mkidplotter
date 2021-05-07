@@ -59,7 +59,7 @@ class NoiseResultsCurve(MKIDResultsCurve):
             dx = x_data[1] - x_data[0]
             x_data.append(x_data[-1] + dx)
             x_data = [x - dx / 2 for x in x_data]
-            self.setData(x_data, 10 * np.log10(y_data), stepMode=True)
+            self.setData(x_data, 10 * np.log10(y_data), stepMode="center")
 
 
 class HistogramResultsCurve(MKIDResultsCurve):
@@ -75,5 +75,5 @@ class HistogramResultsCurve(MKIDResultsCurve):
         x_data = data[self.x].copy()
         y_data = data[self.y]
         if len(x_data) == len(y_data) + 1:
-            self.setData(x_data, y_data, stepMode=True)
+            self.setData(x_data, y_data, stepMode="center")
 
