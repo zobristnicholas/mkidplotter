@@ -14,5 +14,5 @@ setup(name='mkidplotter',
                         "cycler",
                         "pytest",
                         "pytest-qt",
-                        "toml"],
+                        "yaml"],
       zip_safe=False)
