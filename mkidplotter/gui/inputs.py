@@ -67,7 +67,7 @@ class FileInput(QtGui.QWidget, inputs.Input):
 
     def get_file(self):
         current = os.path.dirname(self.value())
-        file_name = QtGui.QFileDialog.getOpenFileName(parent=self, directory=current)
+        file_name, _ = QtGui.QFileDialog.getOpenFileName(parent=self, directory=current)
         if file_name:
             file_name = os.path.abspath(file_name)  # format separators
             self.setValue(file_name)
