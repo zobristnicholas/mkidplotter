@@ -49,7 +49,7 @@ def load(file_name, **kwargs):
 
 class ManagedWindow(w.ManagedWindow):
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
-                 plot_widget_classes=(), plot_names=(), persistent_indicators=(), name="", **kwargs):
+                 plot_widget_classes=(), plot_names=(), persistent_indicators=(), name="", window_type="", **kwargs):
         if not inputs:
             inputs = tuple(procedure_class().parameter_names)
 
@@ -64,6 +64,7 @@ class ManagedWindow(w.ManagedWindow):
         self.y_labels = y_labels
         self.legend_text = legend_text
         self.name = name
+        self.window_type = window_type
         if isinstance(persistent_indicators, (tuple, list)):
             self.persistent_indicators = persistent_indicators
         else:
@@ -79,6 +80,15 @@ class ManagedWindow(w.ManagedWindow):
         super().__init__(procedure_class, displays=displays, inputs=inputs, x_axis=x_axes[0][0], y_axis=y_axes[0][0],
                          **kwargs)
         self.update_browser_column_width()
+
+        # set the defaults
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        window_type = self.window_type + "_" if self.window_type else ""
+        file_path = os.path.join(directory, window_type + f"default_{self.name}.yaml")
+        if os.path.isfile(file_path):
+            self.set_config(file_path)
 
     def _setup_ui(self):
         load_configuration = QtGui.QAction("Load Configuration", self)
@@ -462,12 +472,62 @@ class ManagedWindow(w.ManagedWindow):
         self.close_window()
         self.closing = True
         event.accept()
+
+    @staticmethod
+    def save_config(save_name, parameter_dict):
+        with open(save_name, "w") as f:
+            yaml.dump({"parameters": parameter_dict}, f)
+
+    def set_config(self, file_name):
+        log.info("loading configuration from {}".format(file_name))
+        with open(file_name, "r") as f:
+            config = yaml.load(f, Loader=yaml.Loader)
+        parameter_dict = config['parameters']
+        parameters = self.make_procedure().parameter_objects()
+        for key, value in parameter_dict.items():
+            if key in parameters.keys():
+                parameters[key].value = value
+        self.inputs.set_parameters(parameters)
+
+    def queue(self):
+        # make results object to hold the gui data
+        procedure = self.make_procedure()  # Procedure class was passed at construction
+        file_path = tempfile.mktemp(suffix=".pickle")
+        results = Results(procedure, file_path)
+        # make the experiment
+        experiment = self.new_experiment(results)
+        start_time = datetime.now().strftime("%y%m%d_%H%M%S")
+        file_name = procedure.file_name(self.window_type, time=start_time)
+        experiment.browser_item.setText(1, file_name)
+        experiment.data_filename = file_name
+        # queue the experiment
+        self.manager.queue(experiment)
+        # do some post queuing stuff
+        self.update_browser_column_width()
+        window_type = self.window_type + "_" if self.window_type else ""
+        save_name = os.path.join(experiment.procedure.directory, "config_" + window_type + start_time + ".yaml")
+        parameter_dict = experiment.procedure.parameter_values()
+        self.save_config(save_name, parameter_dict)
         
     def load_config(self):
-        raise NotImplementedError
+        procedure = self.make_procedure()
+        try:
+            directory = procedure.directory
+        except AttributeError:
+            directory = ""
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
+                                                      f"Config files (config_{self.window_type}*.yaml)")
+        if file_name:
+            self.set_config(file_name)
         
     def save_as_default(self):
-        raise NotImplementedError
+        procedure = self.make_procedure()
+        parameter_dict = procedure.parameter_values()
+        directory = os.path.join(os.path.dirname(__file__), "user_data")
+        window_type = self.window_type + "_" if self.window_type else ""
+        file_path = os.path.join(directory, window_type + f"default_{self.name}.yaml")
+        log.info("saving configuration as default to {}".format(file_path))
+        self.save_config(file_path, parameter_dict)
 
     def close_window(self):
         try:
@@ -519,16 +579,9 @@ class SweepGUI(ManagedWindow):
                          x_axes=x_axes, y_axes=y_axes, x_labels=x_labels,
                          y_labels=y_labels, legend_text=legend_text,
                          plot_widget_classes=plot_widget_classes, plot_names=plot_names,
-                         **kwargs)
+                         window_type="sweep", **kwargs)
         self.setWindowTitle('Sweep GUI')
         self.setWindowIcon(get_image_icon("loop.png"))
-
-        directory = os.path.join(os.path.dirname(__file__), "user_data")
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
-        file_path = os.path.join(directory, f"sweep_default_{self.name}.yaml")
-        if os.path.isfile(file_path):
-            self.set_config(file_path)
 
     def _setup_ui(self):
         self.base_inputs_widget = SweepInputsWidget(self.base_procedure_class, self.ordering, parent=self)
@@ -608,14 +661,14 @@ class SweepGUI(ManagedWindow):
     @staticmethod
     def save_config(save_name, sweep_dict, parameter_dict):
         with open(save_name, "w") as f:
-            yaml.dump({"sweep_dict": sweep_dict, "parameter_dict": parameter_dict}, f)
+            yaml.dump({"sweep": sweep_dict, "parameters": parameter_dict}, f)
 
     def load_config(self):
         sweep_procedure = self.base_inputs_widget.get_procedure()
         sweep_dict = sweep_procedure.parameter_values()
         directory = sweep_dict[self.directory_inputs]
         file_name, _ = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory,
-                                                         "Config files (config_sweep*.yaml)")
+                                                         f"Config files (config_{self.window_type}*.yaml)")
         if file_name:
             self.set_config(file_name)
 
@@ -624,13 +677,13 @@ class SweepGUI(ManagedWindow):
         with open(file_name, "r") as f:
             config = yaml.load(f, Loader=yaml.Loader)
         # set sweep parameters
-        sweep_dict = config['sweep_dict']
+        sweep_dict = config['sweep']
         sweep_parameters = self.base_procedure_class().parameter_objects()
         for key, value in sweep_dict.items():
             sweep_parameters[key].value = value
         self.base_inputs_widget.set_parameters(sweep_parameters)
         # set additional parameters
-        parameter_dict = config['parameter_dict']
+        parameter_dict = config['parameters']
         files = list(parameter_dict.keys())
         parameters = self.make_procedure().parameter_objects()
         ignore_parameters = [params[0] for params in self.sweep_inputs]
@@ -648,7 +701,8 @@ class SweepGUI(ManagedWindow):
         parameter_values = procedure.parameter_values()
         parameter_dict = {"default": parameter_values}
         directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, f"sweep_default_{self.name}.yaml")
+        window_type = self.window_type + "_" if self.window_type else ""
+        file_path = os.path.join(directory, window_type + f"default_{self.name}.yaml")
         log.info("saving configuration as default to {}".format(file_path))
         self.save_config(file_path, sweep_dict, parameter_dict)
 
@@ -722,7 +776,7 @@ class SweepGUI(ManagedWindow):
                     # change the file name to the real file name if it has one
                     # temp, field, atten, fr
                     numbers = [i for i in index] + [f_index]
-                    file_name = procedure.file_name("sweep", numbers, start_time)
+                    file_name = procedure.file_name(self.window_type, numbers, start_time)
                     experiment.browser_item.setText(1, file_name)
                     experiment.data_filename = file_name
                     file_path = os.path.join(directory, file_name)
@@ -740,7 +794,8 @@ class SweepGUI(ManagedWindow):
                 except Exception:
                     log.error('Failed to queue experiment', exc_info=True)
         self.update_browser_column_width()
-        save_name = os.path.join(directory, "config_sweep_" + start_time + ".yaml")
+        window_type = self.window_type + "_" if self.window_type else ""
+        save_name = os.path.join(directory, "config_" + window_type + start_time + ".yaml")
         self.save_config(save_name, sweep_dict, parameter_dict)
         
     def close_window(self):
@@ -756,71 +811,11 @@ class SweepGUI(ManagedWindow):
 class PulseGUI(ManagedWindow):
     def __init__(self, *args, **kwargs):
         log.info("Opening Pulse GUI")
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, window_type="pulse", **kwargs)
         self.sweep_window = None  # reserved for open_pulse_window() in SweepGUI
         
         self.setWindowTitle('Pulse GUI')
 
-        directory = os.path.join(os.path.dirname(__file__), "user_data")
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
-        file_path = os.path.join(directory, f"pulse_default_{self.name}.yaml")
-        if os.path.isfile(file_path):
-            self.set_config(file_path)
-            
-    def queue(self):
-        # make results object to hold the gui data
-        procedure = self.make_procedure()  # Procedure class was passed at construction
-        file_path = tempfile.mktemp(suffix=".pickle")
-        results = Results(procedure, file_path)
-        # make the experiment
-        experiment = self.new_experiment(results)
-        start_time = datetime.now().strftime("%y%m%d_%H%M%S")
-        file_name = procedure.file_name("pulse", time=start_time)
-        experiment.browser_item.setText(1, file_name)
-        experiment.data_filename = file_name
-        # queue the experiment
-        self.manager.queue(experiment)
-        # do some post queuing stuff
-        self.update_browser_column_width()
-        save_name = os.path.join(experiment.procedure.directory, "config_pulse_" + start_time + ".yaml")
-        parameter_dict = experiment.procedure.parameter_values()
-        self.save_config(save_name, parameter_dict)
-
-    @staticmethod
-    def save_config(save_name, parameter_dict):
-        with open(save_name, "w") as f:
-            yaml.dump({"parameter_dict": parameter_dict}, f)
-    
-    def set_config(self, file_name):
-        log.info("loading configuration from {}".format(file_name))
-        with open(file_name, "r") as f:
-            config = yaml.load(f, Loader=yaml.Loader)
-        parameter_dict = config['parameter_dict']
-        parameters = self.make_procedure().parameter_objects()
-        for key, value in parameter_dict.items():
-            if key in parameters.keys():
-                parameters[key].value = value
-        self.inputs.set_parameters(parameters)
-
-    def save_as_default(self):
-        procedure = self.make_procedure()
-        parameter_dict = procedure.parameter_values()
-        directory = os.path.join(os.path.dirname(__file__), "user_data")
-        file_path = os.path.join(directory, f"pulse_default_{self.name}.yaml")
-        log.info("saving configuration as default to {}".format(file_path))
-        self.save_config(file_path, parameter_dict)
-        
-    def load_config(self):
-        procedure = self.make_procedure()
-        try:
-            directory = procedure.directory
-        except AttributeError:
-            directory = ""
-        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open file', directory, "Config files (config_pulse*.yaml)")
-        if file_name:
-            self.set_config(file_name)
-            
     def close_window(self):
         if self.sweep_window is None or not self.sweep_window.isVisible():
             try:
