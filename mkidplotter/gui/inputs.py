@@ -17,7 +17,7 @@ class ScientificInput(inputs.ScientificInput):
         
     def textFromValue(self, value):
         string = "{:.12g}".format(value).replace("e+", "e")
-        string = re.sub("e(-?)0*(\d+)", r"e\1\2", string)
+        string = re.sub(r"e(-?)0*(\d+)", r"e\1\2", string)
         return string
 
 
@@ -46,7 +46,7 @@ class FileInput(QtGui.QWidget, inputs.Input):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setContentsMargins(0, 0, 0, 0)
         if parameter.name:
-            self.label.setText(self.parameter.name +":")
+            self.label.setText(self.parameter.name + ":")
             vbox.addWidget(self.label)
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(self.button)

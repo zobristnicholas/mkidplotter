@@ -189,7 +189,7 @@ class MKIDProcedure(Procedure):
 
 
 class SweepBaseProcedure(MKIDProcedure):
-    """Procedure class to subclass when making a custom MKID sweep procedure"""
+    """Procedure class to subclass when making a custom MKID sweep procedure."""
     # mandatory parameters
     directory = DirectoryParameter("Data Directory")
     attenuation = FloatParameter("DAC Attenuation", units="dB")
