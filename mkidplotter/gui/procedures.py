@@ -93,7 +93,7 @@ class MKIDProcedure(Procedure):
             if isinstance(indicator, Indicator):
                 self.indicator_objects[item] = indicator
 
-    def file_name(self, prefix="", numbers=(), time=None):
+    def file_name(self, prefix="", numbers=(), time=None, ext="npz"):
         """Returns a unique name for saving the file"""
         if self._file_name is not None:
             return self._file_name
@@ -114,21 +114,24 @@ class MKIDProcedure(Procedure):
             base = time.strftime(base)
         else:
             base += time
-        base += ".npz"
+        base += "." + ext
         self._file_name = base
         return self._file_name
 
-    def file_name_parts(self):
+    def file_name_parts(self, file_name=None):
         """Returns the arguments used to create the file_name in file_name()."""
-        file_name = self.file_name().split("_")
+        if file_name is None:
+            file_name = self.file_name()
+        file_name = file_name.split("_")
         time = "_".join(file_name[-2:]).split(".")[0]
         numbers = []
-        name = ""
+        names = []
         for number in file_name[:-2]:
             try:
                 numbers.append(int(number))
             except ValueError:
-                name = number
+                names.append(number)
+        name = "_".join(names)
         return {"prefix": name, "numbers": numbers, "time": time}
 
     def emit(self, topic, record, clear=False):
@@ -169,7 +172,7 @@ class MKIDProcedure(Procedure):
         
     @classmethod
     def connect_daq(cls, daq):
-        """Connects all current and future instances of the procedure class to the DAQ"""
+        """Connects all current and future instances of the procedure class to the DAQ."""
         cls.daq = daq
     
     @classmethod    
