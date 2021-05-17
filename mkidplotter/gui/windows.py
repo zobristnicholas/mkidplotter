@@ -753,7 +753,7 @@ class SweepGUI(ManagedWindow):
             # set sweep parameters
             for item, (parameter, _, _, _, _) in enumerate(self.sweep_inputs):
                 value = sweep_grid[item][index]
-                parameter_values.update({parameter: value})
+                parameter_values.update({parameter: float(value)})
             # loop over frequencies
             for f_index in range(n_freq):
                 # set the frequency parameters
