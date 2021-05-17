@@ -11,11 +11,14 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-def coerce(value):
-    try:
-        coerced = list(value)
-    except TypeError:
+def coerce_to_list(value):
+    if isinstance(value, str):
         coerced = [value]
+    else:
+        try:
+            coerced = list(value)
+        except TypeError:
+            coerced = [value]
     return coerced
 
 
@@ -29,6 +32,6 @@ class Worker(w.Worker):
             for key, value in record.items():
                 if key not in self.results.data.keys() or clear:
                     self.results.data[key] = []
-                self.results.data[key] += coerce(value)
+                self.results.data[key] += coerce_to_list(value)
         else:
             self.monitor_queue.put((topic, record))
