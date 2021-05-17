@@ -57,6 +57,12 @@ class Manager(manager.Manager):
                 self._monitor.start()
                 self._worker.start()
 
+    def _running(self):
+        if self.is_running():
+            self.running.emit(self._running_experiment)
+            for index in range(self.browser.columnCount()):  # resize so "Running" fits in the browser column
+                self.browser.resizeColumnToContents(index)
+
     def _finish(self):
         log.debug("Manager's running experiment has finished")
         experiment = self._running_experiment
