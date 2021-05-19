@@ -15,7 +15,7 @@ from pymeasure.display.inputs import IntegerInput, BooleanInput, ListInput, Stri
 from pymeasure.experiment import FloatParameter, IntegerParameter, BooleanParameter, ListParameter, Parameter
 
 from mkidplotter.gui.displays import StringDisplay, FloatDisplay
-from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve, HistogramResultsCurve
+from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve, HistogramResultsCurve, ParameterResultsCurve
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
 from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput,
@@ -108,6 +108,67 @@ class ResultsDialog(widgets.ResultsDialog):
             self.preview_param.sortItems(0, QtCore.Qt.AscendingOrder)
 
 
+class ParametersWidget(QtGui.QWidget):
+    """ Displays parameters for multiple experiments."""
+
+    def __init__(self, columns, parent=None, x_axes=None, x_label=None, **kwargs):
+        super().__init__(parent)
+        self.columns = columns
+        self.x_axes = x_axes
+        self.x_label = x_label
+        self.curves = []
+        # self.refresh_time = refresh_time
+        # self.check_status = check_status
+        self._setup_ui()
+        self._layout()
+
+    def _setup_ui(self):
+        self.plot = QtGui.QTreeWidget()
+        param_header = QtGui.QTreeWidgetItem(self.x_label)
+        self.plot.setHeaderItem(param_header)
+        self.plot.setColumnWidth(0, 150)
+        self.plot.setAlternatingRowColors(True)
+
+        # patch addItem and removeItem from pyqtgraph PlotItem
+        self.plot.addItem = self.addItem
+        self.plot.removeItem = self.removeItem
+
+    def _layout(self):
+        vbox = QtGui.QVBoxLayout(self)
+        vbox.addWidget(self.plot)
+        self.setLayout(vbox)
+
+    def new_curve(self, results, **kwargs):
+        curve = [ParameterResultsCurve(results, x=x, y=None, **kwargs) for x in self.x_axes]
+        return curve
+
+    def addItem(self, curve):
+        results = []
+        for x_axis in curve.x:
+            try:
+                result = curve.results.data[x_axis][0]
+                if isinstance(result, str):
+                    results.append(result)
+                else:
+                    results.append(f"{result:g}")
+            except IndexError:
+                pass
+        if results:
+            item = QtGui.QTreeWidgetItem(results)
+            self.plot.addTopLevelItem(item)
+            self.curves.append(curve)
+
+        for index in range(self.plot.columnCount()):
+            self.plot.resizeColumnToContents(index)
+
+    def removeItem(self, curve):
+        for index, c in enumerate(self.curves):
+            if curve is c:
+                self.curves.pop(index)
+                self.plot.takeTopLevelItem(index)
+                break
+
+
 class BrowserWidget(widgets.BrowserWidget):
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
@@ -195,6 +256,43 @@ class PlotWidget(widgets.PlotWidget):
         return curve
 
 
+class FitPlotWidget(PlotWidget):
+    """Plot widget for an IQ sweep fit"""
+    def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
+                 y_label=None, legend_text=None, **kwargs):
+        self.x_axes = x_axes
+        self.y_axes = y_axes
+        self.x_label = x_label
+        self.y_label = y_label
+        self.legend_text = legend_text
+        self._point_size = 6
+        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(color='k', width=2, style=QtCore.Qt.DashLine),
+                                   pg.mkPen(color='w', width=2),
+                                   pg.mkPen(None), pg.mkPen(None)],
+                           "shadowPen": [pg.mkPen(None),
+                                         pg.mkPen(None),
+                                         pg.mkPen(color='k', width=4),
+                                         pg.mkPen(None),
+                                         pg.mkPen(None)],
+                           "symbol": ['o', None, None, 'd', '+'],
+                           "symbolPen": [pg.mkPen(None), pg.mkPen(color='k', width=1),
+                                         pg.mkPen(color='k', width=1),
+                                         pg.mkPen(color='k', width=1),
+                                         pg.mkPen(color='k', width=1)],
+                           "symbolBrush": [pg.mkBrush(color='k'), pg.mkBrush(color='k'),
+                                           pg.mkBrush(color='k'), pg.mkBrush(color='k'),
+                                           pg.mkBrush(color='k')],
+                           "symbolSize": [self._point_size, self._point_size,
+                                          self._point_size, self._point_size,
+                                          self._point_size],
+                           "pxMode": [True, True, True, True, True]}
+        n = int(np.ceil(len(self.x_axes) / len(self.line_style["pen"])))
+        self.style_cycle = (cycler(**self.line_style) * n)[:len(self.x_axes)]
+        self.cycler = (color_cycle * self.style_cycle)()
+        super().__init__(*args, **kwargs)
+        self.plot.setAspectLocked(True)
+
+
 class SweepPlotWidget(PlotWidget):
     """Plot widget for an IQ sweep"""
     def __init__(self, *args, color_cycle=None, x_axes=None, y_axes=None, x_label=None,
@@ -226,7 +324,7 @@ class SweepPlotWidget(PlotWidget):
         self.plot.setAspectLocked(True)
 
 
-class TransmissionPlotWidget(SweepPlotWidget):
+class TransmissionPlotWidget(FitPlotWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plot.setAspectLocked(False)
@@ -242,9 +340,15 @@ class PulsePlotWidget(PlotWidget):
         self.y_label = y_label
         self.legend_text = legend_text
         self._point_size = 6
-        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(None), pg.mkPen(None),
+        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(color='w', width=2),
+                                   pg.mkPen(color='w', width=2, style=QtCore.Qt.DashLine),
                                    pg.mkPen(None), pg.mkPen(None)],
-                           "symbol": ['o', 'o', 't', 'd', '+'],
+                           "shadowPen": [pg.mkPen(None),
+                                         pg.mkPen(color='k', width=4),
+                                         pg.mkPen(color='k', width=4),
+                                         pg.mkPen(None),
+                                         pg.mkPen(None)],
+                           "symbol": ['o', None, None, 'd', '+'],
                            "symbolPen": [pg.mkPen(None), pg.mkPen(None),
                                          pg.mkPen(color='k', width=1),
                                          pg.mkPen(color='k', width=1),
@@ -252,7 +356,7 @@ class PulsePlotWidget(PlotWidget):
                            "symbolBrush": [pg.mkBrush(color='k'), pg.mkBrush(color='k'),
                                            pg.mkBrush(color='k'), pg.mkBrush(color='k'),
                                            pg.mkBrush(color='k')],
-                           "symbolSize": [self._point_size, 2,
+                           "symbolSize": [self._point_size, self._point_size,
                                           self._point_size, self._point_size,
                                           self._point_size],
                            "pxMode": [True, True, True, True, True]}

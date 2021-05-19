@@ -43,6 +43,13 @@ class MKIDResultsCurve(ResultsCurve):
                 )
 
 
+class ParameterResultsCurve(MKIDResultsCurve):
+    """For displaying parameter results."""
+    def update(self):
+        if self.force_reload:
+            self.results.reload()
+
+
 class NoiseResultsCurve(MKIDResultsCurve):
     """Extension of the pymeasure ResultsCurve class"""
 
@@ -76,4 +83,3 @@ class HistogramResultsCurve(MKIDResultsCurve):
         y_data = data[self.y]
         if len(x_data) == len(y_data) + 1:
             self.setData(x_data, y_data, stepMode="center")
-

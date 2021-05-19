@@ -1,11 +1,13 @@
 import os
 import logging
+import numpy as np
 from datetime import datetime
 from pymeasure.experiment import Procedure
-from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter)
+from pymeasure.experiment import (IntegerParameter, FloatParameter, Parameter, VectorParameter)
 
+from mkidplotter.gui.inputs import FitInput
 from mkidplotter.gui.indicators import Indicator
-from mkidplotter.gui.parameters import DirectoryParameter, TextEditParameter
+from mkidplotter.gui.parameters import DirectoryParameter, FileParameter, TextEditParameter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -198,3 +200,56 @@ class SweepBaseProcedure(MKIDProcedure):
     attenuation = FloatParameter("DAC Attenuation", units="dB")
     field = FloatParameter("Auxiliary Field", units="V")
     temperature = FloatParameter("Temperature", units="mK")
+
+
+class Meta(type):
+    def __new__(mcs, name, bases, dct):
+        cls = super().__new__(mcs, name, bases, dct)
+        for param in cls.FIT_PARAMETERS:
+            setattr(cls, param, VectorParameter(param, length=4, ui_class=FitInput,
+                                                default=[1, np.nan, np.nan, np.nan]))
+        return cls
+
+
+class FitProcedure(MKIDProcedure, metaclass=Meta):
+    """Procedure class to subclass when making a custom Fit procedure."""
+    # mandatory parameters
+    directory = DirectoryParameter("Output Directory")
+    sweep_file = FileParameter("Sweep File")
+    FIT_PARAMETERS = []
+    DERIVED_PARAMETERS = []
+    CHANNELS = []
+
+    def file_name(self, prefix="", numbers=(), time=None, ext="yaml"):
+        """Returns a unique name for saving the file that uses the sweep file suffix."""
+        if self._file_name is not None:
+            return self._file_name
+        parts = self.file_name_parts(file_name=os.path.basename(self.sweep_file))
+        if not prefix:
+            prefix = parts['prefix']
+        if not numbers:
+            numbers = parts['numbers']
+        if time is None:
+            time = parts['time']
+        numbers = list(numbers)
+        numbers.insert(0, 0)  # add a number to differentiate different fits
+        name = super().file_name(prefix=prefix, numbers=numbers, time=time, ext=ext)
+        while os.path.isfile(os.path.join(self.directory, name)):
+            numbers[0] += 1
+            self._file_name = None  # reset persistent file name so super() call recalculates the name
+            name = super().file_name(prefix=prefix, numbers=numbers, time=time, ext=ext)
+        return name
+
+    def _parameter_names(self):
+        """
+        Provides an ordered list of parameter names before base class init.
+        Overriding base class to allow for FIT_PARAMETERS attribute to specify
+        the parameter order."""
+        parameters = []
+        parameters += self.FIT_PARAMETERS
+        for item in dir(self):
+            if item != "file_name":
+                attribute = getattr(self, item)
+                if isinstance(attribute, Parameter) and item not in parameters:
+                    parameters.append(item)
+        self.parameter_names = parameters

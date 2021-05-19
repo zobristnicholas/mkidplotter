@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import numpy as np
 import pymeasure.display.inputs as inputs
 from pymeasure.display.Qt import QtCore, QtGui, qt_min_version
 from pymeasure.experiment import IntegerParameter, FloatParameter, BooleanParameter
@@ -286,3 +287,79 @@ class BooleanListInput(QtGui.QFrame, inputs.Input):
 
     def value(self):
         return [row.value() for row in self.rows]
+
+
+class FitInput(QtGui.QWidget, inputs.Input):
+    def __init__(self, parameter, parent=None, **kwargs):
+        self._setup_ui()
+        if qt_min_version(5):
+            super().__init__(parameter=parameter, parent=parent, **kwargs)
+        else:
+            QtGui.QWidget.__init__(self, parent=parent, **kwargs)
+            inputs.Input.__init__(self, parameter)
+        self._layout()
+
+    def _setup_ui(self):
+        self.vary = inputs.BooleanInput(BooleanParameter("vary"))
+        self.guess = inputs.StringInput(FloatParameter("guess"))
+        self.min = inputs.StringInput(FloatParameter("min"))
+        self.max = inputs.StringInput(FloatParameter("max"))
+
+    def _layout(self):
+        width = 60
+
+        hbox = QtGui.QHBoxLayout(self)
+        hbox.addStretch()
+        hbox.addWidget(self.vary)
+
+        self.guess.setFixedWidth(width)
+        hbox.addWidget(self.guess)
+        label = QtGui.QLabel(self)
+        label.setText("guess")
+        hbox.addWidget(label)
+
+        self.min.setFixedWidth(width)
+        hbox.addWidget(self.min)
+        label = QtGui.QLabel(self)
+        label.setText("min")
+        hbox.addWidget(label)
+
+        self.max.setFixedWidth(width)
+        hbox.addWidget(self.max)
+        label = QtGui.QLabel(self)
+        label.setText("max")
+        hbox.addWidget(label)
+
+    def value(self):
+        try:
+            guess = float(self.guess.text())
+        except ValueError:
+            guess = np.nan
+        try:
+            minimum = float(self.min.text())
+        except ValueError:
+            minimum = np.nan
+        try:
+            maximum = float(self.min.text())
+        except ValueError:
+            maximum = np.nan
+        value = [float(self.vary.value()), guess, minimum, maximum]
+        return value
+
+    def setValue(self, value):
+        self.vary.setValue(bool(value[0]))
+        if np.isnan(value[1]):
+            self.guess.clear()
+        else:
+            self.guess.setValue(value[1])
+        if np.isnan(value[2]):
+            self.min.clear()
+        else:
+            self.min.setValue(value[2])
+        if np.isnan(value[3]):
+            self.max.clear()
+        else:
+            self.max.setValue(value[3])
+
+    def setSuffix(self, value):
+        pass

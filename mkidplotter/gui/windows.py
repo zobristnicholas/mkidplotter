@@ -16,6 +16,7 @@ from pymeasure.display.manager import Experiment
 from mkidplotter.gui.results import Results
 from mkidplotter.gui.managers import Manager
 from mkidplotter.gui.browser import BrowserItem
+from mkidplotter.gui.curves import ParameterResultsCurve
 from mkidplotter.gui.procedures import SweepGUIProcedure1
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
@@ -130,8 +131,14 @@ class ManagedWindow(w.ManagedWindow):
             self.plot.append(self.plot_widget[-1].plot)
 
         measured_quantities = [item for x_axis in self.x_axes for item in x_axis]
-        measured_quantities.extend([item for y_axis in self.x_axes for item in y_axis])
-        self.browser_widget = BrowserWidget(self.procedure_class, self.displays, measured_quantities, parent=self)
+        measured_quantities.extend([item for y_axis in self.y_axes for item in y_axis])
+        quantities = []
+        for item in measured_quantities:
+            if isinstance(item, (list, tuple)):
+                quantities.extend(item)
+            else:
+                quantities.append(item)
+        self.browser_widget = BrowserWidget(self.procedure_class, self.displays, quantities, parent=self)
         self.browser_widget.show_button.clicked.connect(self.show_experiments)
         self.browser_widget.hide_button.clicked.connect(self.hide_experiments)
         self.browser_widget.clear_button.clicked.connect(self.clear_experiments)
@@ -341,6 +348,12 @@ class ManagedWindow(w.ManagedWindow):
             self.browser_widget.clear_button.setEnabled(True)
 
     def finished(self, experiment):
+        for index, plot in enumerate(self.plot):
+            for curve in experiment.curve[index]:
+                # this kind of curve is only updated at the end of the experiment
+                if isinstance(curve, ParameterResultsCurve):
+                    plot.addItem(curve)
+
         if not self.manager.experiments.has_next():
             self.abort_button.setEnabled(False)
             self.abort_all_button.setEnabled(False)
@@ -824,3 +837,51 @@ class PulseGUI(ManagedWindow):
                 pass
         if self.sweep_window is not None and self.sweep_window.pulse_window is not None:
             self.sweep_window.pulse_window = None  # remove reference to window that is closing
+
+
+class FitGUI(ManagedWindow):
+    def __init__(self, *args, **kwargs):
+        log.info("Opening Fit GUI")
+        super().__init__(*args, window_type="fit", **kwargs)
+
+        self.setWindowTitle('Fit GUI')
+
+    def queue(self):
+        procedure = self.make_procedure()  # Procedure class was passed at construction
+        parameter_values = procedure.parameter_values()
+        sweep_file = os.path.basename(parameter_values["sweep_file"])
+        sweep_directory = os.path.dirname(parameter_values["sweep_file"])
+        directory = parameter_values["directory"]
+        if sweep_file.startswith("config"):
+            with open(procedure.sweep_file, "r") as f:
+                config = yaml.load(f, Loader=yaml.Loader)
+            parameter_dict = config['parameters']
+            sweep_names = list(parameter_dict.keys())
+        else:
+            sweep_names = [sweep_file]
+
+        for sweep_name in sweep_names:
+            # Update the sweep file to the current name
+            sweep_path = os.path.join(sweep_directory, sweep_name)
+            if os.path.isfile(sweep_path):
+                procedure = self.make_procedure()
+                parameter_values.update({"sweep_file": sweep_path})
+                procedure.set_parameters(parameter_values)
+                # make results object to hold the gui data
+                file_path = tempfile.mktemp(suffix=".pickle")
+                results = Results(procedure, file_path)
+                # make the experiment
+                experiment = self.new_experiment(results)
+                file_name = procedure.file_name(self.window_type)
+                experiment.browser_item.setText(1, file_name)
+                experiment.data_filename = file_name
+                # save the config before queuing the experiment
+                # since the procedure needs the file
+                save_name = os.path.join(directory, file_name)
+                self.save_config(save_name, parameter_values)
+                # queue the experiment
+                self.manager.queue(experiment)
+                # do some post queuing stuff
+                self.update_browser_column_width()
+            else:
+                log.error(f"{sweep_path} does not exist.")

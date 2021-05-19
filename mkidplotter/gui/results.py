@@ -9,7 +9,7 @@ from collections import OrderedDict
 from pymeasure.experiment import Procedure
 import pymeasure.experiment.results as results
 
-from mkidplotter.gui.workers import coerce
+from mkidplotter.gui.workers import coerce_to_list
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -103,7 +103,7 @@ class Results(results.Results):
         _results_cache.add(self.data_filename, data)
         for key, value in dictionary.items():
             if key in _results_cache[self.data_filename].keys():
-                _results_cache[self.data_filename][key] += coerce(value)
+                _results_cache[self.data_filename][key] += coerce_to_list(value)
 
     def reload(self):
         pass  # doesn't need to be reloaded like pymeasure Results class
