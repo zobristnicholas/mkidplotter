@@ -341,7 +341,7 @@ class FitInput(QtGui.QWidget, inputs.Input):
         except ValueError:
             minimum = np.nan
         try:
-            maximum = float(self.min.text())
+            maximum = float(self.max.text())
         except ValueError:
             maximum = np.nan
         value = [float(self.vary.value()), guess, minimum, maximum]
