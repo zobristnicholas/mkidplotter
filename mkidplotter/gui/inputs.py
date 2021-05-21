@@ -307,8 +307,9 @@ class FitInput(QtGui.QWidget, inputs.Input):
 
     def _layout(self):
         width = 60
-
         hbox = QtGui.QHBoxLayout(self)
+        left, top, right, bottom = hbox.getContentsMargins()
+        hbox.setContentsMargins(0, top // 2, 0, bottom // 2)
         hbox.addStretch()
         hbox.addWidget(self.vary)
 
@@ -348,18 +349,115 @@ class FitInput(QtGui.QWidget, inputs.Input):
 
     def setValue(self, value):
         self.vary.setValue(bool(value[0]))
+        self.guess.setValue(str(value[1]))
         if np.isnan(value[1]):
             self.guess.clear()
-        else:
-            self.guess.setValue(value[1])
+        self.min.setValue(str(value[2]))
         if np.isnan(value[2]):
             self.min.clear()
-        else:
-            self.min.setValue(value[2])
+        self.max.setValue(str(value[3]))
         if np.isnan(value[3]):
             self.max.clear()
-        else:
-            self.max.setValue(value[3])
 
     def setSuffix(self, value):
         pass
+
+
+class RangeInput(QtGui.QFrame, inputs.Input):
+    labels = []
+
+    def __init__(self, parameter, parent=None, **kwargs):
+        if not self.labels:
+            self.labels = [""] * (parameter._length // 2)
+
+        self._setup_ui()
+        if qt_min_version(5):
+            super().__init__(parameter=parameter, parent=parent, **kwargs)
+        else:
+            QtGui.QWidget.__init__(self, parent=parent, **kwargs)
+            inputs.Input.__init__(self, parameter)
+        self._layout()
+
+    @classmethod
+    def set_labels(cls, labels):
+        class RangeInputSubClass(cls):
+            pass
+
+        RangeInputSubClass.labels = labels
+        return RangeInputSubClass
+
+    def _setup_ui(self):
+        self.rows = []
+        for label in self.labels:
+            self.rows.append([inputs.StringInput(FloatParameter("min")),
+                              inputs.StringInput(FloatParameter("max"))])
+
+    def _layout(self):
+        if len(self.labels) > 1:
+            width = 100
+            vbox = QtGui.QVBoxLayout(self)
+            vbox.setSpacing(6)
+            left, top, right, bottom = vbox.getContentsMargins()
+            vbox.setContentsMargins(left, top // 2, right, bottom // 2)
+            if self.parameter.name:
+                label = QtGui.QLabel(self)
+                label.setText("%s:" % self.parameter.name)
+                vbox.addWidget(label)
+            for index, row in enumerate(self.rows):
+                hbox = QtGui.QHBoxLayout()
+                try:
+                    label = QtGui.QLabel(self)
+                    label.setText("%s" % self.labels[index])
+                    hbox.addWidget(label)
+                except IndexError:
+                    pass
+                hbox.addStretch()
+                for input in row:
+                    input.setFixedWidth(width)
+                    hbox.addWidget(input)
+                    label = QtGui.QLabel(self)
+                    label.setText(input._parameter.name)
+                    hbox.addWidget(label)
+                vbox.addLayout(hbox)
+            self.setLayout(vbox)
+            self.setFrameShape(QtGui.QFrame.Panel)
+            self.setFrameShadow(QtGui.QFrame.Raised)
+            self.setLineWidth(3)
+        else:
+            width = 100
+            hbox = QtGui.QHBoxLayout(self)
+            left, top, right, bottom = hbox.getContentsMargins()
+            hbox.setContentsMargins(0, top // 2, 0, bottom // 2)
+            label = QtGui.QLabel(self)
+            label.setText("%s:" % self.parameter.name)
+            hbox.addWidget(label)
+            hbox.addStretch()
+            for input in self.rows[0]:
+                input.setFixedWidth(width)
+                hbox.addWidget(input)
+                label = QtGui.QLabel(self)
+                label.setText(input._parameter.name)
+                hbox.addWidget(label)
+            self.setLayout(hbox)
+
+    def setSuffix(self, value):
+        pass
+
+    def value(self):
+        result = []
+        for row in self.rows:
+            for input in row:
+                try:
+                    result.append(float(input.value()))
+                except ValueError:
+                    result.append(np.nan)
+        return result
+
+    def setValue(self, value):
+        for index, row in enumerate(self.rows):
+            row[0].setValue(str(value[2 * index]))
+            row[1].setValue(str(value[2 * index + 1]))
+            if np.isnan(value[2 * index]):
+                row[0].clear()
+            if np.isnan(value[2 * index + 1]):
+                row[1].clear()

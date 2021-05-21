@@ -1,6 +1,6 @@
 # bring important mkidplotter functions and classes to the top level
 from mkidplotter.gui.results import Results
-from mkidplotter.gui.inputs import NoiseInput, BooleanListInput, FitInput
+from mkidplotter.gui.inputs import NoiseInput, BooleanListInput, FitInput, RangeInput
 from mkidplotter.gui.windows import SweepGUI, PulseGUI, FitGUI
 from mkidplotter.gui.parameters import (DirectoryParameter, FileParameter,
                                         TextEditParameter)

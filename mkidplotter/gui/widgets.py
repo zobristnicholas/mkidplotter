@@ -19,7 +19,7 @@ from mkidplotter.gui.curves import MKIDResultsCurve, NoiseResultsCurve, Histogra
 from mkidplotter.gui.parameters import FileParameter, DirectoryParameter, TextEditParameter
 from mkidplotter.gui.indicators import Indicator, FloatIndicator, BooleanIndicator, IntegerIndicator
 from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInput, NoiseInput, BooleanListInput,
-                                    ScientificInput)
+                                    ScientificInput, RangeInput)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -554,7 +554,7 @@ class InputsWidget(widgets.InputsWidget):
     """
     Fixes set_parameters bug in pymeasure (would always set to default if existed).
     Puts NoiseWidget last in layout column."""
-    NO_LABEL_INPUTS = (BooleanInput, DirectoryInput, FileInput, BooleanListInput, NoiseInput)
+    NO_LABEL_INPUTS = (BooleanInput, DirectoryInput, FileInput, BooleanListInput, NoiseInput, RangeInput)
 
     def set_parameters(self, parameter_objects):
         for name in self._inputs:
@@ -618,7 +618,7 @@ class InputsWidget(widgets.InputsWidget):
 
         remove_indices = []
         for ind, name in enumerate(inputs):
-            if isinstance(getattr(self, name), (NoiseInput, BooleanListInput)):
+            if isinstance(getattr(self, name), (NoiseInput, BooleanListInput, RangeInput)):
                 continue
             remove_indices.append(ind)
             self._add_widget(name, vbox)
