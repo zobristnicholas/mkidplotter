@@ -238,9 +238,10 @@ class NoiseInput(QtGui.QFrame, inputs.Input):
 class BooleanListInput(QtGui.QFrame, inputs.Input):
     labels = []
 
-    def __init__(self, parameter, parent=None, **kwargs):
+    def __init__(self, parameter, parent=None, horizontal=False, **kwargs):
         if not self.labels:
             self.labels = [""] * parameter._length
+        self.horizontal = horizontal
 
         self._setup_ui()
         if qt_min_version(5):
@@ -251,9 +252,11 @@ class BooleanListInput(QtGui.QFrame, inputs.Input):
         self._layout()
 
     @classmethod
-    def set_labels(cls, labels):
+    def set_labels(cls, labels, **kwargs):
         class BooleanListInputSubClass(cls):
-            pass
+            def __init__(self, *args, **kws):
+                kws.update(kwargs)
+                super().__init__(*args, **kws)
         BooleanListInputSubClass.labels = labels
         return BooleanListInputSubClass
 
@@ -263,17 +266,24 @@ class BooleanListInput(QtGui.QFrame, inputs.Input):
             self.rows.append(inputs.BooleanInput(BooleanParameter(label)))
 
     def _layout(self):
-        vbox = QtGui.QVBoxLayout(self)
-        vbox.setSpacing(6)
-        left, top, right, bottom = vbox.getContentsMargins()
-        vbox.setContentsMargins(left, top // 2, right, bottom // 2)
+        if self.horizontal:
+            box = QtGui.QHBoxLayout(self)
+        else:
+            box = QtGui.QVBoxLayout(self)
+
+        box.setSpacing(6)
+        left, top, right, bottom = box.getContentsMargins()
+        box.setContentsMargins(left, top // 2, right, bottom // 2)
         if self.parameter.name:
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.parameter.name)
-            vbox.addWidget(label)
+            box.addWidget(label)
         for row in self.rows:
-            vbox.addWidget(row)
-        self.setLayout(vbox)
+            if self.horizontal:
+                box.addStretch()
+            box.addWidget(row)
+
+        self.setLayout(box)
         self.setFrameShape(QtGui.QFrame.Panel)
         self.setFrameShadow(QtGui.QFrame.Raised)
         self.setLineWidth(3)
@@ -308,8 +318,7 @@ class FitInput(QtGui.QWidget, inputs.Input):
     def _layout(self):
         width = 60
         hbox = QtGui.QHBoxLayout(self)
-        left, top, right, bottom = hbox.getContentsMargins()
-        hbox.setContentsMargins(0, top // 2, 0, bottom // 2)
+        hbox.setContentsMargins(0, 0, 0, 0)
         hbox.addStretch()
         hbox.addWidget(self.vary)
 

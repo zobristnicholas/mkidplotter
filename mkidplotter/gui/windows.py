@@ -230,7 +230,7 @@ class ManagedWindow(w.ManagedWindow):
         # set the central widget and show
         self.setCentralWidget(self.main)
         self.main.show()
-        self.resize(1400, 1100)
+        self.resize(1400, 1000)
 
     def browser_item_changed(self, item, column):
         if column == 0:
