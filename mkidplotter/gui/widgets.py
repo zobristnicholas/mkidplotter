@@ -603,6 +603,9 @@ class InputsWidget(widgets.InputsWidget):
 
         setattr(self, name, element)
 
+        if name in self._procedure.TOOLTIPS.keys():
+            element.setToolTip(self._procedure.TOOLTIPS[name])
+
     def _layout(self):
         vbox = QtGui.QVBoxLayout(self)
         vbox.setSpacing(6)
