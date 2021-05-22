@@ -146,11 +146,15 @@ class ParametersWidget(QtGui.QWidget):
         results = []
         for x_axis in curve.x:
             try:
-                result = curve.results.data[x_axis][0]
-                if isinstance(result, str):
-                    results.append(result)
+                result = curve.results.data[x_axis]
+                if isinstance(result[0], str):
+                    results.append(result[0])
+                elif isinstance(result, (list, tuple)) and len(result) == 2 and result[1] != 0:
+                    # assuming result = (value, error)
+                    digit = -int(np.floor(np.log10(np.abs(result[1])))) + 1  # two leading digits from the error term
+                    results.append(f"{np.round(result[0], digit):g} \u00b1 {np.round(result[1], digit): g}")
                 else:
-                    results.append(f"{result:g}")
+                    results.append(f"{result[0]:g}")
             except IndexError:
                 pass
         if results:
