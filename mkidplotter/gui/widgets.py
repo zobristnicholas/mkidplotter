@@ -128,6 +128,8 @@ class ParametersWidget(QtGui.QWidget):
         self.plot.setHeaderItem(param_header)
         self.plot.setColumnWidth(0, 150)
         self.plot.setAlternatingRowColors(True)
+        self.plot.setSortingEnabled(True)
+        self.plot.sortItems(0, QtCore.Qt.AscendingOrder)
 
         # patch addItem and removeItem from pyqtgraph PlotItem
         self.plot.addItem = self.addItem
@@ -160,16 +162,16 @@ class ParametersWidget(QtGui.QWidget):
         if results:
             item = QtGui.QTreeWidgetItem(results)
             self.plot.addTopLevelItem(item)
-            self.curves.append(curve)
+            self.curves.append([curve, item])
 
         for index in range(self.plot.columnCount()):
             self.plot.resizeColumnToContents(index)
 
     def removeItem(self, curve):
-        for index, c in enumerate(self.curves):
+        for index, (c, item) in enumerate(self.curves):
             if curve is c:
                 self.curves.pop(index)
-                self.plot.takeTopLevelItem(index)
+                self.plot.takeTopLevelItem(self.plot.indexOfTopLevelItem(item))
                 break
 
 
