@@ -565,6 +565,7 @@ class SweepGUI(ManagedWindow):
         self.directory_inputs = self.ordering["directory_inputs"]
         self.frequency_inputs = self.ordering["frequency_inputs"]
         self.pulse_window = None  # reserved for open_pulse_window()
+        self.fit_window = None
 
         # get an ordered list of the procedure class names
         parameters = list(procedure_class().parameter_names)
@@ -656,11 +657,18 @@ class SweepGUI(ManagedWindow):
         if self.manager.is_running():
             if self.manager.running_experiment() == experiment:  # Experiment running
                 action_open_pulse.setEnabled(False)
-
         action_open_pulse.triggered.connect(lambda: self.open_pulse_gui(experiment))
-
         menu.addAction(action_open_pulse)
         menu_dict['pulse'] = action_open_pulse
+
+        action_open_fit = QtGui.QAction(menu)
+        action_open_fit.setText("Use Settings in Fit GUI")
+        if self.manager.is_running():
+            if self.manager.running_experiment() == experiment:  # Experiment running
+                action_open_fit.setEnabled(False)
+        action_open_fit.triggered.connect(lambda: self.open_fit_gui(experiment))
+        menu.addAction(action_open_fit)
+        menu_dict['fit'] = action_open_fit
         
         return menu_dict
         
@@ -668,6 +676,13 @@ class SweepGUI(ManagedWindow):
         """
         Programs must define their own logic to open a pulse GUI. The window can be saved
         as self.pulse_window for future access.
+        """
+        raise NotImplementedError
+
+    def open_fit_gui(self, experiment):
+        """
+        Programs must define their own logic to open a fit GUI. The window can be saved
+        as self.fit_window for future access.
         """
         raise NotImplementedError
 
