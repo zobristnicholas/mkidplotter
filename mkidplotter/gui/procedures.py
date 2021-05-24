@@ -15,6 +15,7 @@ log.addHandler(logging.NullHandler())
 
 class SweepGUIProcedure1(Procedure):
     """Procedure class for holding the mandatory sweep input arguments"""
+    TOOLTIPS = {}
     ordering = {"directory_inputs": "directory",
                 "frequency_inputs": [["frequency", "frequencies"],
                                      ["span", "spans"]],
@@ -43,6 +44,7 @@ class SweepGUIProcedure1(Procedure):
 
 class SweepGUIProcedure2(Procedure):
     """Procedure class for holding the mandatory sweep input arguments"""
+    TOOLTIPS = {}
     ordering = {"directory_inputs": "directory",
                 "frequency_inputs": [["frequency1", "frequencies1"],
                                      ["span1", "spans1"],
