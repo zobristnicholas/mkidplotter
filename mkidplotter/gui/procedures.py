@@ -219,6 +219,9 @@ class FitProcedure(MKIDProcedure, metaclass=Meta):
     # mandatory parameters
     directory = DirectoryParameter("Output Directory")
     sweep_file = FileParameter("Sweep File")
+    config_file = None
+    fitted_resonators = {}
+    clear_fits = False
     FIT_PARAMETERS = []
     DERIVED_PARAMETERS = []
     CHANNELS = []

@@ -872,14 +872,19 @@ class FitGUI(ManagedWindow):
                 config = yaml.load(f, Loader=yaml.Loader)
             parameter_dict = config['parameters']
             sweep_names = list(parameter_dict.keys())
+            sweep_config = parameter_values["sweep_file"]
         else:
             sweep_names = [sweep_file]
+            sweep_config = None
 
-        for sweep_name in sweep_names:
+        for index, sweep_name in enumerate(sweep_names):
             # Update the sweep file to the current name
             sweep_path = os.path.join(sweep_directory, sweep_name)
             if os.path.isfile(sweep_path):
                 procedure = self.make_procedure()
+                procedure.config_file = sweep_config
+                if index == len(sweep_names) - 1:
+                    procedure.clear_fits = True  # don't keep the resonator state past this queue
                 parameter_values.update({"sweep_file": sweep_path})
                 procedure.set_parameters(parameter_values)
                 # make results object to hold the gui data
