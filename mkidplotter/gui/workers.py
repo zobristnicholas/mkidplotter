@@ -10,6 +10,8 @@ except ImportError:
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
+w.zmq = None  # disable zmq
+
 
 def coerce_to_list(value):
     if isinstance(value, str):
