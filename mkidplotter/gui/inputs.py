@@ -398,12 +398,15 @@ class RangeInput(QtGui.QFrame, inputs.Input):
     def _setup_ui(self):
         self.rows = []
         for label in self.labels:
-            self.rows.append([inputs.StringInput(FloatParameter("min")),
-                              inputs.StringInput(FloatParameter("max"))])
+            self.rows.append([inputs.FloatInput(FloatParameter("left", units="%", minimum=0, maximum=100)),
+                              inputs.FloatInput(FloatParameter("right", units="%", minimum=0, maximum=100))])
+            for row in self.rows:
+                for input in row:
+                    input.setAlignment(QtCore.Qt.AlignRight)
 
     def _layout(self):
         if len(self.labels) > 1:
-            width = 100
+            width = 60
             vbox = QtGui.QVBoxLayout(self)
             vbox.setSpacing(6)
             left, top, right, bottom = vbox.getContentsMargins()
@@ -420,33 +423,33 @@ class RangeInput(QtGui.QFrame, inputs.Input):
                     hbox.addWidget(label)
                 except IndexError:
                     pass
-                hbox.addStretch()
                 for input in row:
                     input.setFixedWidth(width)
                     hbox.addWidget(input)
                     label = QtGui.QLabel(self)
                     label.setText(input._parameter.name)
                     hbox.addWidget(label)
+                hbox.addStretch()
                 vbox.addLayout(hbox)
             self.setLayout(vbox)
             self.setFrameShape(QtGui.QFrame.Panel)
             self.setFrameShadow(QtGui.QFrame.Raised)
             self.setLineWidth(3)
         else:
-            width = 100
+            width = 60
             hbox = QtGui.QHBoxLayout(self)
             left, top, right, bottom = hbox.getContentsMargins()
             hbox.setContentsMargins(0, top // 2, 0, bottom // 2)
             label = QtGui.QLabel(self)
             label.setText("%s:" % self.parameter.name)
             hbox.addWidget(label)
-            hbox.addStretch()
             for input in self.rows[0]:
                 input.setFixedWidth(width)
                 hbox.addWidget(input)
                 label = QtGui.QLabel(self)
                 label.setText(input._parameter.name)
                 hbox.addWidget(label)
+            hbox.addStretch()
             self.setLayout(hbox)
 
     def setSuffix(self, value):
@@ -464,8 +467,8 @@ class RangeInput(QtGui.QFrame, inputs.Input):
 
     def setValue(self, value):
         for index, row in enumerate(self.rows):
-            row[0].setValue(str(value[2 * index]))
-            row[1].setValue(str(value[2 * index + 1]))
+            row[0].setValue(value[2 * index])
+            row[1].setValue(value[2 * index + 1])
             if np.isnan(value[2 * index]):
                 row[0].clear()
             if np.isnan(value[2 * index + 1]):
