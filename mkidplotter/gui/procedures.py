@@ -186,14 +186,30 @@ class MKIDProcedure(Procedure):
         if cls.daq is not None and callable(cls.daq.close):
             cls.daq.close()
             
-    def setup_procedure_log(self, name='temperature', file_name='temperature.log'):
+    def setup_procedure_log(self, name='temperature', file_name='temperature.log', filter=None):
         """Set up a log that saves to a file following the procedure directory.
-        All handlers previously in the log are removed."""
-        temperature_log = logging.getLogger(name)
-        temperature_log.handlers = []
-        handler = logging.FileHandler(os.path.join(self.directory, file_name))
+        All filters previously in the log are removed if filter is not None."""
+        logger = logging.getLogger(name)  # get the logger
+        file_path = os.path.join(self.directory, file_name)
+        for h in logger.handlers:
+            if isinstance(h, logging.FileHandler) and h.baseFilename == os.path.abspath(file_path):
+                handler = h  # get the handler for this filename
+                break
+        else:
+            # create the handler if it hasn't been made yet
+            handler = logging.FileHandler(file_path, encoding='utf-8', mode='a')
+
+        # set the formatting string for this log file
         handler.setFormatter(logging.Formatter('%(asctime)s : %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p'))
-        temperature_log.addHandler(handler)
+
+        # filter log messages if requested
+        handler.filters = []  # clear all filters
+        if filter is not None:
+            if isinstance(filter, str):
+                filter = [filter]
+            for f in filter:
+                handler.addFilter(lambda record: record.name != f)
+        logger.addHandler(handler)
 
 
 class SweepBaseProcedure(MKIDProcedure):
