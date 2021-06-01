@@ -346,15 +346,9 @@ class PulsePlotWidget(PlotWidget):
         self.y_label = y_label
         self.legend_text = legend_text
         self._point_size = 6
-        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(color='w', width=2),
-                                   pg.mkPen(color='w', width=2, style=QtCore.Qt.DashLine),
+        self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(None), pg.mkPen(None),
                                    pg.mkPen(None), pg.mkPen(None)],
-                           "shadowPen": [pg.mkPen(None),
-                                         pg.mkPen(color='k', width=4),
-                                         pg.mkPen(color='k', width=4),
-                                         pg.mkPen(None),
-                                         pg.mkPen(None)],
-                           "symbol": ['o', None, None, 'd', '+'],
+                           "symbol": ['o', 'o', 't', 'd', '+'],
                            "symbolPen": [pg.mkPen(None), pg.mkPen(None),
                                          pg.mkPen(color='k', width=1),
                                          pg.mkPen(color='k', width=1),
@@ -362,7 +356,7 @@ class PulsePlotWidget(PlotWidget):
                            "symbolBrush": [pg.mkBrush(color='k'), pg.mkBrush(color='k'),
                                            pg.mkBrush(color='k'), pg.mkBrush(color='k'),
                                            pg.mkBrush(color='k')],
-                           "symbolSize": [self._point_size, self._point_size,
+                           "symbolSize": [self._point_size, 2,
                                           self._point_size, self._point_size,
                                           self._point_size],
                            "pxMode": [True, True, True, True, True]}
