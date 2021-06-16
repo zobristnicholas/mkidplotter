@@ -1,10 +1,12 @@
 import os
 import copy
 import logging
+import threading
 import numpy as np
 import pyqtgraph as pg
 from cycler import cycler
 from datetime import datetime
+from functools import partial
 import pyqtgraph.graphicsItems.LegendItem as li
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
 from pymeasure.experiment import Results
@@ -23,6 +25,64 @@ from mkidplotter.gui.inputs import (FileInput, DirectoryInput, FloatTextEditInpu
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
+
+
+class InstrumentControl(QtGui.QWidget):
+    def __init__(self, instruments, *args, names=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tab = QtGui.QTabWidget()
+        if not names:
+            names = [type(instrument).__name__ for instrument in instruments]
+        for name, instrument in zip(names, instruments):
+            self.add_tab(name, instrument)
+        layout = QtGui.QGridLayout()
+        layout.addWidget(self.tab, 0, 0)
+        self.setLayout(layout)
+        self.setWindowTitle("Instrument Control")
+
+    def add_tab(self, name, instrument):
+        vbox = QtGui.QVBoxLayout()
+        for label, method, arguments in instrument.CONTROL:
+            hbox = QtGui.QHBoxLayout()
+            label_widget = QtGui.QLabel(label + ":")
+            hbox.addWidget(label_widget)
+            hbox.addStretch()
+            inputs = []
+            for argument in arguments:
+                if argument[0] is not float:
+                    raise ValueError("Non-float arguments are not implemented yet.")
+                inputs.append(QtGui.QDoubleSpinBox())
+                if len(argument) > 1 and argument[1]:
+                    inputs[-1].setPrefix(argument[1])
+                if len(argument) > 2 and argument[2]:
+                    inputs[-1].setSuffix(argument[2])
+                if len(argument) > 3 and (argument[3] or argument[3] == 0):
+                    inputs[-1].setDecimals(argument[3])
+                if len(argument) > 4 and (argument[4] or argument[4] == 0):
+                    inputs[-1].setMaximum(argument[4])
+                if len(argument) > 5 and (argument[5] or argument[5] == 0):
+                    inputs[-1].setMinimum(argument[5])
+                hbox.addWidget(inputs[-1])
+
+            def evaluate(inst, func, values):
+                def run():
+                    try:
+                        getattr(inst, func)(*[v.value() for v in values])
+                    except Exception as error:
+                        logging.exception(error)
+                        raise error
+                thread = threading.Thread(target=run)
+                thread.start()
+
+            write = QtGui.QPushButton()
+            write.setText("Send Command")
+            write.clicked.connect(partial(evaluate, instrument, method, inputs))
+            hbox.addWidget(write)
+            vbox.addLayout(hbox)
+        vbox.addStretch()
+        tab_widget = QtGui.QWidget()
+        tab_widget.setLayout(vbox)
+        self.tab.addTab(tab_widget, name)
 
 
 class ResultsDialog(widgets.ResultsDialog):

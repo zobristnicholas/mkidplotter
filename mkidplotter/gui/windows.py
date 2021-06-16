@@ -20,7 +20,7 @@ from mkidplotter.gui.curves import ParameterResultsCurve
 from mkidplotter.gui.procedures import SweepGUIProcedure1
 from mkidplotter.icons.manage_icons import get_image_icon
 from mkidplotter.gui.widgets import (SweepPlotWidget, SweepInputsWidget, InputsWidget,
-                                     BrowserWidget, ResultsDialog, IndicatorsWidget)
+                                     BrowserWidget, ResultsDialog, IndicatorsWidget, InstrumentControl)
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -49,12 +49,15 @@ def load(file_name, **kwargs):
 
 
 class ManagedWindow(w.ManagedWindow):
+    HAS_DAQ = True
+
     def __init__(self, procedure_class, inputs=(), x_axes=(), y_axes=(), x_labels=(), y_labels=(), legend_text=(),
                  plot_widget_classes=(), plot_names=(), persistent_indicators=(), name="", window_type="", **kwargs):
         if not inputs:
             inputs = tuple(procedure_class().parameter_names)
 
         self.closing = False  # closeEvent() called twice on Mac
+        self.instrument_control = None  # placeholder
         self._abort_state = "abort"
         self._abort_all = False
         self.plot_widget_classes = plot_widget_classes
@@ -92,16 +95,21 @@ class ManagedWindow(w.ManagedWindow):
             self.set_config(file_path)
 
     def _setup_ui(self):
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu('Options')
+
         load_configuration = QtGui.QAction("Load Configuration", self)
         load_configuration.triggered.connect(self.load_config)
+        file_menu.addAction(load_configuration)
 
         save_as_default = QtGui.QAction("Save Current Settings as Default", self)
         save_as_default.triggered.connect(self.save_as_default)
-
-        main_menu = self.menuBar()
-        file_menu = main_menu.addMenu('Options')
-        file_menu.addAction(load_configuration)
         file_menu.addAction(save_as_default)
+
+        if self.HAS_DAQ:
+            instrument_control = QtGui.QAction("Instrument Control", self)
+            instrument_control.triggered.connect(self.open_instrument_control)
+            file_menu.addAction(instrument_control)
         
         self.log_widget = LogWidget()
         self.log.addHandler(self.log_widget.handler)  # needs to be in Qt context?
@@ -543,6 +551,8 @@ class ManagedWindow(w.ManagedWindow):
         self.save_config(file_path, parameter_dict)
 
     def close_window(self):
+        if self.instrument_control is not None:
+            self.instrument_control.close()
         try:
             self.procedure_class.close()
         except AttributeError:
@@ -551,6 +561,30 @@ class ManagedWindow(w.ManagedWindow):
     def set_parameters(self, chosen_experiment):
         parameters = chosen_experiment.procedure.parameter_objects()
         self.inputs.set_parameters(parameters)
+
+    def open_instrument_control(self):
+        if self.procedure_class.daq is None:
+            log.exception("The instrument control panel cannot be opened "
+                          "because no DAQ is connected to this window's procedure.")
+        else:
+            better_names = {'dac_atten': 'DAC Attenuation',
+                            'dac': 'DAC',
+                            'adc_atten': 'ADC Attenuation',
+                            'adc': 'ADC',
+                            'thermometer': 'Thermometer',
+                            'primary_amplifier': 'Primary Amplifier',
+                            'source': 'Light Source'}
+            instruments, names = [], []
+            for name in self.procedure_class.daq.instrument_names:
+                instrument = getattr(self.procedure_class.daq, name)
+                if instrument is not None and hasattr(instrument, "CONTROL"):
+                    instruments.append(instrument)
+                    if name in better_names.keys():
+                        names.append(better_names[name])
+                    else:
+                        names.append(name)
+            self.instrument_control = InstrumentControl(instruments, names=names)
+            self.instrument_control.show()
 
 
 class SweepGUI(ManagedWindow):
@@ -828,10 +862,7 @@ class SweepGUI(ManagedWindow):
         
     def close_window(self):
         if self.pulse_window is None or not self.pulse_window.isVisible():
-            try:
-                self.procedure_class.close()
-            except AttributeError:
-                pass
+            super().close_window()
         if self.pulse_window is not None and self.pulse_window.sweep_window is not None:
             self.pulse_window.sweep_window = None  # remove reference to window that is closing
 
@@ -846,15 +877,14 @@ class PulseGUI(ManagedWindow):
 
     def close_window(self):
         if self.sweep_window is None or not self.sweep_window.isVisible():
-            try:
-                self.procedure_class.close()
-            except AttributeError:
-                pass
+            super().close_window()
         if self.sweep_window is not None and self.sweep_window.pulse_window is not None:
             self.sweep_window.pulse_window = None  # remove reference to window that is closing
 
 
 class FitGUI(ManagedWindow):
+    HAS_DAQ = False
+
     def __init__(self, *args, **kwargs):
         log.info("Opening Fit GUI")
         super().__init__(*args, window_type="fit", **kwargs)
