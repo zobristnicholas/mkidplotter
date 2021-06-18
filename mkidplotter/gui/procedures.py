@@ -80,6 +80,7 @@ class MKIDProcedure(Procedure):
     # optional daq from analogreadout connect to the class with connect_daq()
     daq = None
     TOOLTIPS = {}
+    directory = None
 
     def __init__(self, *args, **kwargs):
         self._parameter_names()
@@ -186,21 +187,32 @@ class MKIDProcedure(Procedure):
         if cls.daq is not None and callable(cls.daq.close):
             cls.daq.close()
             
-    def setup_procedure_log(self, name='temperature', file_name='temperature.log', filter_=None):
+    def setup_procedure_log(self, name='temperature',
+                            file_name='temperature.log', filter_=None):
         """Set up a log that saves to a file following the procedure directory.
         All filters previously in the log are removed if filter is not None."""
+        if self.directory is None:
+            raise IOError("Cannot setup a procedure log if no directory "
+                          "parameter is provided.")
+
+        # Get the handler for the file log.
         logger = logging.getLogger(name)  # get the logger
         file_path = os.path.join(self.directory, file_name)
         for h in logger.handlers:
-            if isinstance(h, logging.FileHandler) and h.baseFilename == os.path.abspath(file_path):
+            is_current_handler = (isinstance(h, logging.FileHandler) and
+                                  h.baseFilename == os.path.abspath(file_path))
+            if is_current_handler:
                 handler = h  # get the handler for this filename
                 break
         else:
             # create the handler if it hasn't been made yet
-            handler = logging.FileHandler(file_path, encoding='utf-8', mode='a')
+            handler = logging.FileHandler(file_path, encoding='utf-8',
+                                          mode='a')
 
         # set the formatting string for this log file
-        handler.setFormatter(logging.Formatter('%(asctime)s : %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p'))
+        handler.setFormatter(
+            logging.Formatter('%(asctime)s : %(message)s',
+                              datefmt='%Y-%m-%d %I:%M:%S %p'))
 
         # filter log messages if requested
         handler.filters = []  # clear all filters
