@@ -186,7 +186,7 @@ class MKIDProcedure(Procedure):
         if cls.daq is not None and callable(cls.daq.close):
             cls.daq.close()
             
-    def setup_procedure_log(self, name='temperature', file_name='temperature.log', filter=None):
+    def setup_procedure_log(self, name='temperature', file_name='temperature.log', filter_=None):
         """Set up a log that saves to a file following the procedure directory.
         All filters previously in the log are removed if filter is not None."""
         logger = logging.getLogger(name)  # get the logger
@@ -204,10 +204,10 @@ class MKIDProcedure(Procedure):
 
         # filter log messages if requested
         handler.filters = []  # clear all filters
-        if filter is not None:
-            if isinstance(filter, str):
-                filter = [filter]
-            for f in filter:
+        if filter_ is not None:
+            if isinstance(filter_, str):
+                filter_ = [filter_]
+            for f in filter_:
                 handler.addFilter(lambda record: record.name != f)
         logger.addHandler(handler)
 
