@@ -439,7 +439,7 @@ class TracePlotWidget(PlotWidget):
         self._point_size = 4
         self.line_style = {"pen": [pg.mkPen(None), pg.mkPen(None), pg.mkPen(None),
                                    pg.mkPen(None), pg.mkPen(None)],
-                           "symbol": ['o', '+', 't', 'd', '+'],
+                           "symbol": ['o', 't', '+', 'd', '+'],
                            "symbolPen": [pg.mkPen(None), pg.mkPen(None),
                                          pg.mkPen(color='k', width=1),
                                          pg.mkPen(color='k', width=1),
